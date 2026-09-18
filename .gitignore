@@ -1,0 +1,7 @@
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+engine/node_modules/
+engine/coverage/
+.env
+.env.*
