@@ -7,6 +7,8 @@ solc_version = "0.8.30"
 evm_version = "cancun"
 optimizer = true
 optimizer_runs = 200
+# Monad execution semantics for tests and scripts (forge --network monad).
+network = "monad"
 auto_detect_remappings = false
 remappings = [
     "forge-std/=lib/forge-std/src/",
@@ -14,3 +16,7 @@ remappings = [
     "vault-v2/=lib/vault-v2/src/",
     "metamorpho-v1.1/=lib/metamorpho-v1.1/src/",
 ]
+
+[rpc_endpoints]
+# Read from the environment only. Never write an RPC URL with a key into this file.
+monad = "${RPC_URL}"

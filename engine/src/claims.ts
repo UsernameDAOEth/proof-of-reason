@@ -15,7 +15,10 @@ export class SchemaError extends Error {
 export const WAD = 10n ** 18n
 export const SECONDS_PER_YEAR = 31_536_000n
 export const DEFAULT_GUARD_BLOCKS = 5
-export const MAX_WINDOW_BLOCKS = 100
+/** Cap on window.blocks. A median rate claim reads params once, then state and IRM rate per block. */
+export const MAX_WINDOW_BLOCKS = 20
+/** ReasonGate.DEFAULT_MAX_AGE_BLOCKS, kept equal by engine/test/claims.test.ts. */
+export const GATE_DEFAULT_MAX_AGE_BLOCKS = 60
 export const TOLERANCE_SLACK_PP = 1e-9
 
 const UINT256_MAX = 2n ** 256n - 1n
@@ -189,18 +192,22 @@ export function parseMandate(input: unknown): MandateV0 {
 /** Human-readable conventions, rendered into docs/CLAIMS.md. */
 export const CONVENTIONS: readonly string[] = [
   'Percent values: valuePct is a percentage (5.2 means 5.2 percent). tolerancePp is an absolute difference in percentage points.',
+  'Reads: every chain read is one eth_call pinned to one block, sent only after the previous read returns, in claim order and then ascending block order. Reads are never batched (no JSON-RPC batch, no Multicall) and never concurrent.',
   'Borrow rate: the market IRM borrowRateView(marketParams, market) at the pinned block, a per-second rate scaled by 1e18 (WAD). A market whose irm is the zero address has a borrow rate of 0.',
   'Utilization: totalBorrowAssets / totalSupplyAssets, and 0 when totalSupplyAssets is 0.',
   'Supply rate: supplyRatePerSecond = borrowRatePerSecond * utilization * (1 - fee / 1e18), computed in integer WAD arithmetic as borrowRate * totalBorrowAssets * (1e18 - fee) / (totalSupplyAssets * 1e18) with one floor division.',
   `APR = ratePerSecond * ${SECONDS_PER_YEAR.toString()} (a 365-day year). APY = exp(APR) - 1 (continuous compounding). Percent = fraction * 100.`,
   'Basis: a rate claim is compared only against an observation on the same basis and side. APR claimed against an APY basis is a schema error, never a FALSE.',
-  `Manipulation guard: rate and utilization are sampled at every block of a window ending at the pinned block. The window is window.blocks for a median rate claim and ${DEFAULT_GUARD_BLOCKS} blocks otherwise. The observed value is the median of the samples (the mean of the two middle samples when the count is even). If max minus min exceeds 2 * tolerancePp, the result is UNVERIFIABLE. window.blocks is at most ${MAX_WINDOW_BLOCKS}.`,
-  `Tolerance: a rate or utilization claim is TRUE when |observed - claimed| <= tolerancePp. Exactly at tolerance is TRUE. Every tolerance comparison, including the guard, adds a fixed slack of ${TOLERANCE_SLACK_PP} percentage points to absorb IEEE 754 rounding.`,
-  'Liquidity: withdrawable = totalSupplyAssets - totalBorrowAssets at the pinned block, in loan-token atomic units. TRUE when withdrawable >= minWithdrawable.',
+  `Manipulation guard: rate and utilization are sampled at every block of a window ending at the pinned block. The window is window.blocks for a median rate claim and ${DEFAULT_GUARD_BLOCKS} blocks otherwise. The observed value is the median of the samples (the mean of the two middle samples when the count is even). If max minus min exceeds 2 * tolerancePp, the result is UNVERIFIABLE. window.blocks is at most ${MAX_WINDOW_BLOCKS}, so a rate claim needs at most ${2 * MAX_WINDOW_BLOCKS + 1} reads (params once, then state and IRM rate at each block).`,
+  'Tolerance: a rate or utilization claim is TRUE when |observed - claimed| <= tolerancePp. Exactly at tolerance is TRUE.',
+  `Slack: every tolerance comparison, including the manipulation guard, adds a fixed ${TOLERANCE_SLACK_PP} percentage points (TOLERANCE_SLACK_PP) to absorb IEEE 754 rounding. So |observed - claimed| <= tolerancePp + ${TOLERANCE_SLACK_PP} and max - min > 2 * tolerancePp + ${TOLERANCE_SLACK_PP}.`,
+  `Liquidity: withdrawable = totalSupplyAssets - totalBorrowAssets, in loan-token atomic units, sampled at every block of the ${DEFAULT_GUARD_BLOCKS}-block window ending at the pinned block. A floor claim takes the MINIMUM over the window, not the median. TRUE when that minimum >= minWithdrawable.`,
   'Identity: TRUE when loanToken, collateralToken, oracle, irm, and lltv all equal idToMarketParams(market) at the pinned block.',
-  'Uncreated market: a rate, utilization, or liquidity claim on a market whose lastUpdate is 0 is UNVERIFIABLE.',
+  'Uncreated market: a rate, utilization, or liquidity claim on a market whose lastUpdate is 0 at any block of its window is UNVERIFIABLE.',
   'Action check: the vault calldata is decoded and compared with the stated action, function, adapter, market ids, and amounts, in order. The calldata must also re-encode to the exact same bytes. Any mismatch or undecodable calldata is FAIL. Market id = keccak256(abi.encode(MarketParams)).',
   'Mandate check: every market the decoded calldata touches, including markets reduced to zero, must be in mandate.allowedMarkets. Any violation is FAIL.',
+  `Freshness bound: ReasonGate accepts a verdict only while checkedAtBlock <= block.number and block.number - checkedAtBlock <= maxAgeBlocks. maxAgeBlocks defaults to ${GATE_DEFAULT_MAX_AGE_BLOCKS} blocks (about 18 s on Monad at about 0.30 s per block) and is owner-settable with setMaxAgeBlocks. checkedAtBlock is the pinned block the observers read.`,
   'Verdict (ruleset REASON-R0): any FALSE, action mismatch, or mandate violation gives FAIL. Otherwise any UNVERIFIABLE or any missing mandate.requiredKinds gives WAIT. Otherwise PASS. On-chain codes: PASS 1, WAIT 2, FAIL 3.',
+  'Premise check disabled: a mandate with zero requiredKinds lets an action PASS with no claims at all. Every receipt under such a mandate carries the notice "premise check disabled by mandate".',
   'Hashes: claimsHash = keccak256 of the UTF-8 canonical JSON of the claims array. receiptHash = keccak256 of the UTF-8 canonical JSON of the receipt. Canonical JSON sorts object keys by UTF-16 code unit, has no whitespace, writes bigints as base-10 strings, and rejects undefined and non-finite numbers.',
 ]

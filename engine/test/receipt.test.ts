@@ -5,6 +5,7 @@ import type { ActionV0, ClaimV0, MandateV0 } from '../src/claims.ts'
 import { vaultAbi } from '../src/action.ts'
 import {
   ENGINE_VERSION,
+  PREMISE_CHECK_DISABLED,
   RULESET,
   buildReceipt,
   canonicalJson,
@@ -81,6 +82,7 @@ function input(): ReceiptInput {
         kind: 'liquidity',
         market: FIXTURE_ID as Hex,
         block: PINNED_BLOCK,
+        samples: [{ block: PINNED_BLOCK, withdrawable: 200_000_000_000n }],
         withdrawable: 200_000_000_000n,
         unverifiable: null,
       },
@@ -150,6 +152,15 @@ describe('receipt hash', () => {
     expect(receiptHash(buildReceipt({ ...input(), checkedAtBlock: 999n }))).not.toBe(base)
     const edited = [{ ...claims[0]!, valuePct: 2.31 } as ClaimV0, claims[1]!]
     expect(receiptHash(buildReceipt({ ...input(), claims: edited }))).not.toBe(base)
+  })
+
+  it('a mandate with zero required kinds carries "premise check disabled by mandate"', () => {
+    expect(PREMISE_CHECK_DISABLED).toBe('premise check disabled by mandate')
+    const open = buildReceipt({ ...input(), mandate: { allowedMarkets: [FIXTURE_ID], requiredKinds: [] } })
+    expect(open.notices).toEqual(['premise check disabled by mandate'])
+    expect(canonicalJson(open)).toContain('premise check disabled by mandate')
+    expect(buildReceipt(input()).notices).toEqual([])
+    expect(receiptHash(open)).not.toBe(receiptHash(buildReceipt(input())))
   })
 
   it('carries intent fields, ruleset, engine version, and model id', () => {

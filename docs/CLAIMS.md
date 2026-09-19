@@ -1,6 +1,6 @@
 # Proof of Reason claim schema
 
-Generated from engine/src/claims.ts by `pnpm gen:claims`. Do not edit by hand. Ruleset REASON-R0, engine 0.1.0.
+Generated from engine/src/claims.ts by `pnpm gen:claims`. Do not edit by hand. Ruleset REASON-R0, engine 0.2.0.
 
 ## ClaimV0
 
@@ -18,7 +18,7 @@ Every claim carries id, kind, and sourceSpan. Unknown fields are rejected. Claim
 | valuePct | number >= 0 | yes | claimed annual rate in percent: 5.2 means 5.2 percent |
 | basis | `"APY"` or `"APR"` | yes | annualization basis of valuePct |
 | compounding | `"continuous"` | yes | APY compounding convention |
-| window | { type: `"instant"` } or { type: `"median"`, blocks: integer >= 1, <= 100 } | yes | instant: the rate at the pinned block, read through the default guard window; median: the median over the given number of blocks ending at the pinned block |
+| window | { type: `"instant"` } or { type: `"median"`, blocks: integer >= 1, <= 20 } | yes | instant: the rate at the pinned block, read through the default guard window; median: the median over the given number of blocks ending at the pinned block |
 | tolerancePp | number >= 0 | yes | allowed absolute difference, in percentage points |
 
 ### kind utilization
@@ -97,17 +97,21 @@ Set by the principal.
 ## Conventions
 
 1. Percent values: valuePct is a percentage (5.2 means 5.2 percent). tolerancePp is an absolute difference in percentage points.
-2. Borrow rate: the market IRM borrowRateView(marketParams, market) at the pinned block, a per-second rate scaled by 1e18 (WAD). A market whose irm is the zero address has a borrow rate of 0.
-3. Utilization: totalBorrowAssets / totalSupplyAssets, and 0 when totalSupplyAssets is 0.
-4. Supply rate: supplyRatePerSecond = borrowRatePerSecond * utilization * (1 - fee / 1e18), computed in integer WAD arithmetic as borrowRate * totalBorrowAssets * (1e18 - fee) / (totalSupplyAssets * 1e18) with one floor division.
-5. APR = ratePerSecond * 31536000 (a 365-day year). APY = exp(APR) - 1 (continuous compounding). Percent = fraction * 100.
-6. Basis: a rate claim is compared only against an observation on the same basis and side. APR claimed against an APY basis is a schema error, never a FALSE.
-7. Manipulation guard: rate and utilization are sampled at every block of a window ending at the pinned block. The window is window.blocks for a median rate claim and 5 blocks otherwise. The observed value is the median of the samples (the mean of the two middle samples when the count is even). If max minus min exceeds 2 * tolerancePp, the result is UNVERIFIABLE. window.blocks is at most 100.
-8. Tolerance: a rate or utilization claim is TRUE when |observed - claimed| <= tolerancePp. Exactly at tolerance is TRUE. Every tolerance comparison, including the guard, adds a fixed slack of 1e-9 percentage points to absorb IEEE 754 rounding.
-9. Liquidity: withdrawable = totalSupplyAssets - totalBorrowAssets at the pinned block, in loan-token atomic units. TRUE when withdrawable >= minWithdrawable.
-10. Identity: TRUE when loanToken, collateralToken, oracle, irm, and lltv all equal idToMarketParams(market) at the pinned block.
-11. Uncreated market: a rate, utilization, or liquidity claim on a market whose lastUpdate is 0 is UNVERIFIABLE.
-12. Action check: the vault calldata is decoded and compared with the stated action, function, adapter, market ids, and amounts, in order. The calldata must also re-encode to the exact same bytes. Any mismatch or undecodable calldata is FAIL. Market id = keccak256(abi.encode(MarketParams)).
-13. Mandate check: every market the decoded calldata touches, including markets reduced to zero, must be in mandate.allowedMarkets. Any violation is FAIL.
-14. Verdict (ruleset REASON-R0): any FALSE, action mismatch, or mandate violation gives FAIL. Otherwise any UNVERIFIABLE or any missing mandate.requiredKinds gives WAIT. Otherwise PASS. On-chain codes: PASS 1, WAIT 2, FAIL 3.
-15. Hashes: claimsHash = keccak256 of the UTF-8 canonical JSON of the claims array. receiptHash = keccak256 of the UTF-8 canonical JSON of the receipt. Canonical JSON sorts object keys by UTF-16 code unit, has no whitespace, writes bigints as base-10 strings, and rejects undefined and non-finite numbers.
+2. Reads: every chain read is one eth_call pinned to one block, sent only after the previous read returns, in claim order and then ascending block order. Reads are never batched (no JSON-RPC batch, no Multicall) and never concurrent.
+3. Borrow rate: the market IRM borrowRateView(marketParams, market) at the pinned block, a per-second rate scaled by 1e18 (WAD). A market whose irm is the zero address has a borrow rate of 0.
+4. Utilization: totalBorrowAssets / totalSupplyAssets, and 0 when totalSupplyAssets is 0.
+5. Supply rate: supplyRatePerSecond = borrowRatePerSecond * utilization * (1 - fee / 1e18), computed in integer WAD arithmetic as borrowRate * totalBorrowAssets * (1e18 - fee) / (totalSupplyAssets * 1e18) with one floor division.
+6. APR = ratePerSecond * 31536000 (a 365-day year). APY = exp(APR) - 1 (continuous compounding). Percent = fraction * 100.
+7. Basis: a rate claim is compared only against an observation on the same basis and side. APR claimed against an APY basis is a schema error, never a FALSE.
+8. Manipulation guard: rate and utilization are sampled at every block of a window ending at the pinned block. The window is window.blocks for a median rate claim and 5 blocks otherwise. The observed value is the median of the samples (the mean of the two middle samples when the count is even). If max minus min exceeds 2 * tolerancePp, the result is UNVERIFIABLE. window.blocks is at most 20, so a rate claim needs at most 41 reads (params once, then state and IRM rate at each block).
+9. Tolerance: a rate or utilization claim is TRUE when |observed - claimed| <= tolerancePp. Exactly at tolerance is TRUE.
+10. Slack: every tolerance comparison, including the manipulation guard, adds a fixed 1e-9 percentage points (TOLERANCE_SLACK_PP) to absorb IEEE 754 rounding. So |observed - claimed| <= tolerancePp + 1e-9 and max - min > 2 * tolerancePp + 1e-9.
+11. Liquidity: withdrawable = totalSupplyAssets - totalBorrowAssets, in loan-token atomic units, sampled at every block of the 5-block window ending at the pinned block. A floor claim takes the MINIMUM over the window, not the median. TRUE when that minimum >= minWithdrawable.
+12. Identity: TRUE when loanToken, collateralToken, oracle, irm, and lltv all equal idToMarketParams(market) at the pinned block.
+13. Uncreated market: a rate, utilization, or liquidity claim on a market whose lastUpdate is 0 at any block of its window is UNVERIFIABLE.
+14. Action check: the vault calldata is decoded and compared with the stated action, function, adapter, market ids, and amounts, in order. The calldata must also re-encode to the exact same bytes. Any mismatch or undecodable calldata is FAIL. Market id = keccak256(abi.encode(MarketParams)).
+15. Mandate check: every market the decoded calldata touches, including markets reduced to zero, must be in mandate.allowedMarkets. Any violation is FAIL.
+16. Freshness bound: ReasonGate accepts a verdict only while checkedAtBlock <= block.number and block.number - checkedAtBlock <= maxAgeBlocks. maxAgeBlocks defaults to 60 blocks (about 18 s on Monad at about 0.30 s per block) and is owner-settable with setMaxAgeBlocks. checkedAtBlock is the pinned block the observers read.
+17. Verdict (ruleset REASON-R0): any FALSE, action mismatch, or mandate violation gives FAIL. Otherwise any UNVERIFIABLE or any missing mandate.requiredKinds gives WAIT. Otherwise PASS. On-chain codes: PASS 1, WAIT 2, FAIL 3.
+18. Premise check disabled: a mandate with zero requiredKinds lets an action PASS with no claims at all. Every receipt under such a mandate carries the notice "premise check disabled by mandate".
+19. Hashes: claimsHash = keccak256 of the UTF-8 canonical JSON of the claims array. receiptHash = keccak256 of the UTF-8 canonical JSON of the receipt. Canonical JSON sorts object keys by UTF-16 code unit, has no whitespace, writes bigints as base-10 strings, and rejects undefined and non-finite numbers.

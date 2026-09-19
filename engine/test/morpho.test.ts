@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { zeroAddress } from 'viem'
 import type { Address, Hex } from 'viem'
+import type { MarketParams, MarketState, MorphoReader } from '../src/morpho.ts'
 import type { RateClaim } from '../src/claims.ts'
 import {
   annualPct,
@@ -9,6 +10,7 @@ import {
   guardTripped,
   median,
   observe,
+  observeAll,
   supplyRatePerSecondWad,
   utilizationPct,
   utilizationWad,
@@ -176,7 +178,7 @@ describe('observe', () => {
     expect(obs.valuePct).toBe(80)
   })
 
-  it('reads liquidity and identity at the pinned block', async () => {
+  it('reads liquidity over the window and identity at the pinned block', async () => {
     const reader = new FakeReader()
     const liq = await observe(
       reader,
@@ -200,12 +202,90 @@ describe('observe', () => {
     )
     if (liq.kind !== 'liquidity' || ident.kind !== 'identity') throw new Error('wrong kinds')
     expect(liq.withdrawable).toBe(200_000_000_000n)
+    expect(liq.samples.map((s) => s.block)).toEqual([996n, 997n, 998n, 999n, 1000n])
     expect(ident.params).toEqual(FIXTURE_PARAMS)
-    expect(reader.calls.map((c) => c.block)).toEqual([PINNED_BLOCK, PINNED_BLOCK])
+    // Identity is read once, at the pinned block.
+    expect(reader.calls.filter((c) => c.fn === 'idToMarketParams').map((c) => c.block)).toEqual([PINNED_BLOCK])
+  })
+
+  it('liquidity takes the MINIMUM over the window, not the median or the pinned value', async () => {
+    // Withdrawable dips to 150,000e6 at block 998 only; the pinned block and the median say 200,000e6.
+    const dip = { ...FIXTURE_MARKET, totalBorrowAssets: 850_000_000_000n }
+    const reader = new FakeReader({ states: new Map([[998n, dip]]) })
+    const liq = await observe(
+      reader,
+      { id: 'l1', kind: 'liquidity', sourceSpan: null, market: FIXTURE_ID, minWithdrawable: '1' },
+      PINNED_BLOCK,
+    )
+    if (liq.kind !== 'liquidity') throw new Error('expected liquidity')
+    expect(liq.withdrawable).toBe(150_000_000_000n)
+    expect(liq.samples.find((s) => s.block === PINNED_BLOCK)?.withdrawable).toBe(200_000_000_000n)
   })
 
   it('refuses a window that starts before genesis', async () => {
     await expect(observe(new FakeReader(), rateClaim(), 3n)).rejects.toThrow(RangeError)
+  })
+})
+
+describe('read policy: sequential, never batched, never concurrent', () => {
+  it('reads params, then state and IRM rate block by block in ascending order', async () => {
+    const reader = new FakeReader()
+    await observe(reader, rateClaim(), PINNED_BLOCK)
+    const order = reader.calls.map((c) => `${c.fn}@${c.block}`)
+    expect(order).toEqual([
+      'idToMarketParams@1000',
+      'market@996',
+      'borrowRateView@996',
+      'market@997',
+      'borrowRateView@997',
+      'market@998',
+      'borrowRateView@998',
+      'market@999',
+      'borrowRateView@999',
+      'market@1000',
+      'borrowRateView@1000',
+    ])
+  })
+
+  it('never has more than one read in flight across a whole claim set', async () => {
+    const inner = new FakeReader()
+    let inFlight = 0
+    let maxInFlight = 0
+    const track = async <T>(read: () => Promise<T>): Promise<T> => {
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      await new Promise((resolve) => setTimeout(resolve, 1))
+      try {
+        return await read()
+      } finally {
+        inFlight--
+      }
+    }
+    const reader: MorphoReader = {
+      market: (id: Hex, b: bigint) => track(() => inner.market(id, b)),
+      idToMarketParams: (id: Hex, b: bigint) => track(() => inner.idToMarketParams(id, b)),
+      borrowRateView: (p: MarketParams, m: MarketState, b: bigint) => track(() => inner.borrowRateView(p, m, b)),
+    }
+    const claims = [
+      rateClaim(),
+      { id: 'u1', kind: 'utilization', sourceSpan: null, market: FIXTURE_ID, valuePct: 80, tolerancePp: 0.1 },
+      { id: 'l1', kind: 'liquidity', sourceSpan: null, market: FIXTURE_ID, minWithdrawable: '1' },
+    ] as const
+    const observations = await observeAll(reader, claims, PINNED_BLOCK)
+    expect(observations.map((o) => o.kind)).toEqual(['rate', 'utilization', 'liquidity'])
+    expect(inner.calls).toHaveLength(11 + 5 + 5)
+    expect(maxInFlight).toBe(1)
+  })
+
+  it('stops reading at the first block where the market is not created', async () => {
+    const reader = new FakeReader({ states: new Map([[997n, { ...FIXTURE_MARKET, lastUpdate: 0n }]]) })
+    const obs = await observe(
+      reader,
+      { id: 'l1', kind: 'liquidity', sourceSpan: null, market: FIXTURE_ID, minWithdrawable: '1' },
+      PINNED_BLOCK,
+    )
+    expect(obs.unverifiable).toBe('market not created')
+    expect(reader.calls.map((c) => c.block)).toEqual([996n, 997n])
   })
 })
 

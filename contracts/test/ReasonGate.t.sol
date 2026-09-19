@@ -99,6 +99,9 @@ contract ReasonGateTest is Test {
     bytes32 internal constant OVERRIDE_TYPEHASH = keccak256("Override(bytes32 intentHash)");
     uint256 internal constant SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
 
+    /// Freshness bound default: 60 blocks, about 18 s on Monad.
+    uint64 internal constant DEFAULT_MAX_AGE = 60;
+
     uint8 internal constant PASS = 1;
     uint8 internal constant WAIT = 2;
     uint8 internal constant FAIL = 3;
@@ -269,7 +272,8 @@ contract ReasonGateTest is Test {
         assertEq(gate.vault(), address(vault));
         assertEq(gate.validator(), validator);
         assertEq(gate.agent(), agent);
-        assertEq(gate.maxAgeBlocks(), 20);
+        assertEq(gate.DEFAULT_MAX_AGE_BLOCKS(), DEFAULT_MAX_AGE);
+        assertEq(gate.maxAgeBlocks(), DEFAULT_MAX_AGE);
         (, string memory name, string memory version, uint256 chainId, address verifyingContract,,) =
             gate.eip712Domain();
         assertEq(name, "Proof of Reason");
@@ -388,17 +392,17 @@ contract ReasonGateTest is Test {
 
     function test_verdictOlderThanMaxAge_reverts() public {
         Call memory c = _call(PASS);
-        c.checkedAtBlock = uint64(block.number - 21);
+        c.checkedAtBlock = uint64(block.number - DEFAULT_MAX_AGE - 1);
         bytes memory sig = _signVerdict(c);
         vm.expectRevert(
-            abi.encodeWithSelector(ReasonGate.VerdictTooOld.selector, c.checkedAtBlock, block.number, uint64(20))
+            abi.encodeWithSelector(ReasonGate.VerdictTooOld.selector, c.checkedAtBlock, block.number, DEFAULT_MAX_AGE)
         );
         _exec(c, sig, "");
     }
 
     function test_verdictExactlyMaxAge_executes() public {
         Call memory c = _call(PASS);
-        c.checkedAtBlock = uint64(block.number - 20);
+        c.checkedAtBlock = uint64(block.number - DEFAULT_MAX_AGE);
         _exec(c, _signVerdict(c), "");
         assertEq(vault.calls(), 1);
     }
@@ -406,6 +410,23 @@ contract ReasonGateTest is Test {
     function test_verdictAtCurrentBlock_executes() public {
         Call memory c = _call(PASS);
         c.checkedAtBlock = uint64(block.number);
+        _exec(c, _signVerdict(c), "");
+        assertEq(vault.calls(), 1);
+    }
+
+    function test_maxAgeBlocks_ownerSetBoundApplies() public {
+        vm.prank(owner);
+        gate.setMaxAgeBlocks(5);
+
+        Call memory c = _call(PASS);
+        c.checkedAtBlock = uint64(block.number - 6);
+        bytes memory sig = _signVerdict(c);
+        vm.expectRevert(
+            abi.encodeWithSelector(ReasonGate.VerdictTooOld.selector, c.checkedAtBlock, block.number, uint64(5))
+        );
+        _exec(c, sig, "");
+
+        c.checkedAtBlock = uint64(block.number - 5);
         _exec(c, _signVerdict(c), "");
         assertEq(vault.calls(), 1);
     }
@@ -673,7 +694,7 @@ contract ReasonGateTest is Test {
         gate.setAgent(newAgent);
 
         vm.expectEmit(false, false, false, true, address(gate));
-        emit ReasonGate.MaxAgeBlocksSet(20, 5);
+        emit ReasonGate.MaxAgeBlocksSet(DEFAULT_MAX_AGE, 5);
         gate.setMaxAgeBlocks(5);
 
         vm.expectEmit(true, false, false, true, address(gate));
@@ -720,6 +741,64 @@ contract ReasonGateTest is Test {
         }
         assertEq(selectorEvents, 3);
         assertTrue(sawValidator && sawAgent && sawMaxAge);
+    }
+
+    // ---------------------------------------------------------------- blocklist
+
+    function _blocked() internal pure returns (bytes4[4] memory) {
+        return [
+            IVaultV2ERC4626.withdraw.selector,
+            IVaultV2ERC4626.redeem.selector,
+            IVaultV2ERC20.transfer.selector,
+            IVaultV2.forceDeallocate.selector
+        ];
+    }
+
+    function test_blocklist_computedFromInterfaces() public view {
+        assertEq(gate.BLOCKED_WITHDRAW(), bytes4(keccak256("withdraw(uint256,address,address)")));
+        assertEq(gate.BLOCKED_REDEEM(), bytes4(keccak256("redeem(uint256,address,address)")));
+        assertEq(gate.BLOCKED_TRANSFER(), bytes4(keccak256("transfer(address,uint256)")));
+        assertEq(gate.BLOCKED_FORCE_DEALLOCATE(), bytes4(keccak256("forceDeallocate(address,bytes,uint256,address)")));
+        // Same selectors as the Vault V2 interfaces pinned in lib/.
+        bytes4[4] memory blocked = _blocked();
+        assertEq(gate.BLOCKED_WITHDRAW(), blocked[0]);
+        assertEq(gate.BLOCKED_REDEEM(), blocked[1]);
+        assertEq(gate.BLOCKED_TRANSFER(), blocked[2]);
+        assertEq(gate.BLOCKED_FORCE_DEALLOCATE(), blocked[3]);
+    }
+
+    function test_blocklist_isBlockedSelector() public view {
+        bytes4[4] memory blocked = _blocked();
+        for (uint256 i; i < blocked.length; ++i) {
+            assertTrue(gate.isBlockedSelector(blocked[i]));
+        }
+        assertFalse(gate.isBlockedSelector(IVaultV2.allocate.selector));
+        assertFalse(gate.isBlockedSelector(IVaultV2.deallocate.selector));
+        assertFalse(gate.isBlockedSelector(IMetaMorphoV1_1Base.reallocate.selector));
+    }
+
+    function test_blocklist_setterRejects() public {
+        bytes4[4] memory blocked = _blocked();
+        vm.startPrank(owner);
+        for (uint256 i; i < blocked.length; ++i) {
+            vm.expectRevert(abi.encodeWithSelector(ReasonGate.SelectorBlocked.selector, blocked[i]));
+            gate.setAllowedSelector(blocked[i], true);
+            assertFalse(gate.allowedSelector(blocked[i]));
+            // Disallowing a blocked selector is a harmless no-op.
+            gate.setAllowedSelector(blocked[i], false);
+        }
+        vm.stopPrank();
+    }
+
+    function test_blocklist_constructorRejects() public {
+        bytes4[4] memory blocked = _blocked();
+        for (uint256 i; i < blocked.length; ++i) {
+            bytes4[] memory selectors = new bytes4[](2);
+            selectors[0] = IVaultV2.allocate.selector;
+            selectors[1] = blocked[i];
+            vm.expectRevert(abi.encodeWithSelector(ReasonGate.SelectorBlocked.selector, blocked[i]));
+            new ReasonGate(owner, address(vault), validator, agent, selectors);
+        }
     }
 
     // ---------------------------------------------------------------- engine parity

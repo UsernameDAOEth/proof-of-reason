@@ -176,10 +176,14 @@ export type UtilizationObservation = {
   unverifiable: string | null
 }
 
+export type WithdrawableSample = { block: bigint; withdrawable: bigint }
+
 export type LiquidityObservation = {
   kind: 'liquidity'
   market: Hex
   block: bigint
+  samples: WithdrawableSample[]
+  /** Minimum over the window: a floor claim is checked against the worst block, not the median. */
   withdrawable: bigint | null
   unverifiable: string | null
 }
@@ -218,6 +222,21 @@ function summarize(samples: Sample[], tolerancePp: number): { valuePct: number |
   return { valuePct: median(values), unverifiable: null }
 }
 
+/**
+ * Reads the market state at each block, one eth_call at a time in ascending block order.
+ * Never batched and never concurrent (docs/MONAD.md, RPC policy). Returns null as soon as a
+ * block shows the market not yet created.
+ */
+async function readStates(reader: MorphoReader, market: Hex, blocks: bigint[]): Promise<MarketState[] | null> {
+  const states: MarketState[] = []
+  for (const b of blocks) {
+    const state = await reader.market(market, b)
+    if (state.lastUpdate === 0n) return null
+    states.push(state)
+  }
+  return states
+}
+
 async function observeRate(
   reader: MorphoReader,
   claim: RateClaim,
@@ -229,19 +248,16 @@ async function observeRate(
   const count = claim.window.type === 'median' ? claim.window.blocks : guardBlocks
   const blocks = windowBlocks(block, count)
   const params = await reader.idToMarketParams(market, block)
-  const states = await Promise.all(blocks.map((b) => reader.market(market, b)))
-  if (states.some((s) => s.lastUpdate === 0n)) {
-    return { ...base, samples: [], valuePct: null, unverifiable: NOT_CREATED }
+  const samples: Sample[] = []
+  // Sequential: the state at block b, then the IRM rate at block b, then block b + 1.
+  for (const b of blocks) {
+    const state = await reader.market(market, b)
+    if (state.lastUpdate === 0n) return { ...base, samples: [], valuePct: null, unverifiable: NOT_CREATED }
+    const borrowRate =
+      params.irm.toLowerCase() === zeroAddress ? 0n : await reader.borrowRateView(params, state, b)
+    const rate = claim.side === 'borrow' ? borrowRate : supplyRatePerSecondWad(borrowRate, state)
+    samples.push({ block: b, valuePct: annualPct(rate, claim.basis) })
   }
-  const samples = await Promise.all(
-    blocks.map(async (b, i) => {
-      const state = states[i]!
-      const borrowRate =
-        params.irm.toLowerCase() === zeroAddress ? 0n : await reader.borrowRateView(params, state, b)
-      const rate = claim.side === 'borrow' ? borrowRate : supplyRatePerSecondWad(borrowRate, state)
-      return { block: b, valuePct: annualPct(rate, claim.basis) }
-    }),
-  )
   return { ...base, samples, ...summarize(samples, claim.tolerancePp) }
 }
 
@@ -254,10 +270,8 @@ async function observeUtilization(
   const market = claim.market as Hex
   const base = { kind: 'utilization', market, block } as const
   const blocks = windowBlocks(block, guardBlocks)
-  const states = await Promise.all(blocks.map((b) => reader.market(market, b)))
-  if (states.some((s) => s.lastUpdate === 0n)) {
-    return { ...base, samples: [], valuePct: null, unverifiable: NOT_CREATED }
-  }
+  const states = await readStates(reader, market, blocks)
+  if (states === null) return { ...base, samples: [], valuePct: null, unverifiable: NOT_CREATED }
   const samples = blocks.map((b, i) => ({ block: b, valuePct: utilizationPct(states[i]!) }))
   return { ...base, samples, ...summarize(samples, claim.tolerancePp) }
 }
@@ -266,13 +280,16 @@ async function observeLiquidity(
   reader: MorphoReader,
   claim: LiquidityClaim,
   block: bigint,
+  guardBlocks: number,
 ): Promise<LiquidityObservation> {
   const market = claim.market as Hex
-  const state = await reader.market(market, block)
-  if (state.lastUpdate === 0n) {
-    return { kind: 'liquidity', market, block, withdrawable: null, unverifiable: NOT_CREATED }
-  }
-  return { kind: 'liquidity', market, block, withdrawable: withdrawable(state), unverifiable: null }
+  const base = { kind: 'liquidity', market, block } as const
+  const blocks = windowBlocks(block, guardBlocks)
+  const states = await readStates(reader, market, blocks)
+  if (states === null) return { ...base, samples: [], withdrawable: null, unverifiable: NOT_CREATED }
+  const samples = blocks.map((b, i) => ({ block: b, withdrawable: withdrawable(states[i]!) }))
+  const min = samples.reduce((lo, s) => (s.withdrawable < lo ? s.withdrawable : lo), samples[0]!.withdrawable)
+  return { ...base, samples, withdrawable: min, unverifiable: null }
 }
 
 async function observeIdentity(
@@ -300,8 +317,20 @@ export async function observe(
     case 'utilization':
       return observeUtilization(reader, claim, block, guardBlocks)
     case 'liquidity':
-      return observeLiquidity(reader, claim, block)
+      return observeLiquidity(reader, claim, block, guardBlocks)
     case 'identity':
       return observeIdentity(reader, claim, block)
   }
+}
+
+/** Observes each claim in order, one claim at a time. Never concurrent. */
+export async function observeAll(
+  reader: MorphoReader,
+  claims: readonly ClaimV0[],
+  block: bigint,
+  options: ObserveOptions = {},
+): Promise<Observation[]> {
+  const observations: Observation[] = []
+  for (const claim of claims) observations.push(await observe(reader, claim, block, options))
+  return observations
 }

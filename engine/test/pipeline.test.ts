@@ -5,7 +5,7 @@ import { privateKeyToAccount } from 'viem/accounts'
 import type { ActionV0, ClaimV0, MandateV0 } from '../src/claims.ts'
 import { checkAction, vaultAbi } from '../src/action.ts'
 import { checkMandate } from '../src/mandate.ts'
-import { observe } from '../src/morpho.ts'
+import { observeAll } from '../src/morpho.ts'
 import { compare } from '../src/compare.ts'
 import { OUTCOME_CODE, decide } from '../src/verdict.ts'
 import { buildReceipt, receiptHash } from '../src/receipt.ts'
@@ -39,7 +39,7 @@ const mandate: MandateV0 = { allowedMarkets: [FIXTURE_ID], requiredKinds: ['rate
 
 async function run(claims: ClaimV0[], stated: ActionV0 = action) {
   const reader = new FakeReader()
-  const observations = await Promise.all(claims.map((c) => observe(reader, c, PINNED_BLOCK)))
+  const observations = await observeAll(reader, claims, PINNED_BLOCK)
   const results = claims.map((c, i) => compare(c, observations[i]!))
   const actionCheck = checkAction(stated, data)
   const verdict = decide({

@@ -1,0 +1,26 @@
+# Proof of Reason validator worker. Deployed in Phase 2B by following docs/DEPLOY_RUNBOOK.md.
+# Production hostname: api.proofofreason.com (zone proofofreason.com, docs/MONAD.md section 7).
+# Public configuration only. Secrets, set with `wrangler secret put`, never as vars:
+#   VALIDATOR_KEY  the verdict signing key
+#   MONAD_RPC_URL  the archive-capable RPC URL (QuickNode or Tenderly Node); it carries a token
+name = "proof-of-reason"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+# @x402/hono uses the Node Buffer global when it settles a payment.
+compatibility_flags = ["nodejs_compat"]
+# Serve only the production hostname, not a *.workers.dev URL.
+workers_dev = false
+routes = [
+  { pattern = "api.proofofreason.com", custom_domain = true },
+]
+
+[vars]
+# Filled in during 2B from the DeployVault / DeployGate logs and DJ's USDC receiving address.
+GATE_ADDRESS = ""
+VAULT_ADDRESS = ""
+PAY_TO = ""
+
+[[kv_namespaces]]
+binding = "RECEIPTS"
+# Filled in during 2B from `pnpm exec wrangler kv namespace create RECEIPTS`.
+id = ""

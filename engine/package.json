@@ -1,20 +1,24 @@
 {
   "name": "proof-of-reason-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
   "scripts": {
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "gen:claims": "node scripts/gen-claims.ts"
+    "gen:claims": "node scripts/gen-claims.ts",
+    "test:live": "LIVE=1 vitest run"
+  },
+  "dependencies": {
+    "viem": "^2.56.7",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/node": "^26.6.1",
     "typescript": "^7.0.2",
     "vitest": "^5.0.1"
-  },
-  "dependencies": {
-    "viem": "^2.56.7",
-    "zod": "^4.6.5"
   }
 }

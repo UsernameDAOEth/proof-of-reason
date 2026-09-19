@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { SchemaError, parseAction, parseClaim, parseClaims, parseMandate } from '../src/claims.ts'
+import { readFileSync } from 'node:fs'
+import {
+  GATE_DEFAULT_MAX_AGE_BLOCKS,
+  MAX_WINDOW_BLOCKS,
+  SchemaError,
+  parseAction,
+  parseClaim,
+  parseClaims,
+  parseMandate,
+} from '../src/claims.ts'
 import { ADAPTER, FIXTURE_ID } from './fixtures.ts'
 
 const rate = {
@@ -31,7 +40,7 @@ const identity = {
 describe('ClaimV0', () => {
   it('accepts one claim of every kind', () => {
     expect(parseClaims([rate, utilization, liquidity, identity])).toHaveLength(4)
-    expect(parseClaim({ ...rate, window: { type: 'median', blocks: 100 } }).kind).toBe('rate')
+    expect(parseClaim({ ...rate, window: { type: 'median', blocks: 20 } }).kind).toBe('rate')
   })
 
   it('rejects malformed claims with a SchemaError', () => {
@@ -41,7 +50,7 @@ describe('ClaimV0', () => {
       { ...rate, compounding: 'daily' },
       { ...rate, side: 'both' },
       { ...rate, window: { type: 'median', blocks: 0 } },
-      { ...rate, window: { type: 'median', blocks: 101 } },
+      { ...rate, window: { type: 'median', blocks: 21 } },
       { ...rate, window: { type: 'median', blocks: 2.5 } },
       { ...rate, window: { type: 'instant', blocks: 3 } },
       { ...rate, tolerancePp: -1 },
@@ -86,5 +95,18 @@ describe('ActionV0 and MandateV0', () => {
     expect(() => parseAction({ fn: 'reallocate', allocations: [] })).toThrow(SchemaError)
     expect(() => parseAction({ fn: 'withdraw', assets: '1' })).toThrow(SchemaError)
     expect(() => parseMandate({ allowedMarkets: [], requiredKinds: ['price'] })).toThrow(SchemaError)
+  })
+})
+
+describe('declared bounds', () => {
+  it('caps median windows at 20 blocks', () => {
+    expect(MAX_WINDOW_BLOCKS).toBe(20)
+  })
+
+  it('documents the same freshness bound that ReasonGate.sol compiles in', () => {
+    const source = readFileSync(new URL('../../contracts/src/ReasonGate.sol', import.meta.url), 'utf8')
+    const match = source.match(/uint64 public constant DEFAULT_MAX_AGE_BLOCKS = (\d+);/)
+    expect(match?.[1]).toBe(String(GATE_DEFAULT_MAX_AGE_BLOCKS))
+    expect(GATE_DEFAULT_MAX_AGE_BLOCKS).toBe(60)
   })
 })

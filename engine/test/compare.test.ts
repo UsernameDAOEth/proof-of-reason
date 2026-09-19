@@ -5,7 +5,7 @@ import type { RateClaim } from '../src/claims.ts'
 import { compare } from '../src/compare.ts'
 import { observe } from '../src/morpho.ts'
 import type { Observation, RateObservation } from '../src/morpho.ts'
-import { FakeReader, FIXTURE_ID, FIXTURE_PARAMS, PINNED_BLOCK } from './fixtures.ts'
+import { FakeReader, FIXTURE_ID, FIXTURE_MARKET, FIXTURE_PARAMS, PINNED_BLOCK } from './fixtures.ts'
 
 function rateClaim(overrides: Partial<RateClaim> = {}): RateClaim {
   return {
@@ -100,6 +100,7 @@ describe('compare, tolerance edges', () => {
       kind: 'liquidity',
       market: FIXTURE_ID as Hex,
       block: PINNED_BLOCK,
+      samples: [],
       withdrawable,
       unverifiable: null,
     })
@@ -137,6 +138,23 @@ describe('compare, tolerance edges', () => {
   })
 })
 
+describe('observe then compare, liquidity floor', () => {
+  it('a floor claim met at the pinned block but not at every block of the window is FALSE', async () => {
+    const dip = { ...FIXTURE_MARKET, totalBorrowAssets: 850_000_000_000n }
+    const reader = new FakeReader({ states: new Map([[997n, dip]]) })
+    const claim = {
+      id: 'l1',
+      kind: 'liquidity',
+      sourceSpan: null,
+      market: FIXTURE_ID,
+      minWithdrawable: '200000000000',
+    } as const
+    const result = compare(claim, await observe(reader, claim, PINNED_BLOCK))
+    expect(result.status).toBe('FALSE')
+    expect(result.observed).toBe('150000000000')
+  })
+})
+
 describe('compare, schema errors', () => {
   it('APR claimed against an APY basis is a schema error, not a FALSE', () => {
     const claim = rateClaim({ basis: 'APR' })
@@ -157,6 +175,7 @@ describe('compare, schema errors', () => {
       kind: 'liquidity',
       market: FIXTURE_ID as Hex,
       block: PINNED_BLOCK,
+      samples: [],
       withdrawable: 1n,
       unverifiable: null,
     }

@@ -1,0 +1,7 @@
+packages:
+  - engine
+  - worker
+# wrangler's native toolchain: install scripts only place platform binaries.
+allowBuilds:
+  esbuild: true
+  workerd: true

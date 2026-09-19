@@ -7,6 +7,9 @@ import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IVaultV2} from "vault-v2/interfaces/IVaultV2.sol";
 
 /// @title ReasonGate
 /// @notice Proof of Reason veto-only executor for ONE vault. The gate holds an allocator-type
@@ -20,13 +23,22 @@ contract ReasonGate is Ownable2Step, EIP712, ReentrancyGuard {
     uint8 public constant WAIT = 2;
     uint8 public constant FAIL = 3;
 
-    uint64 public constant DEFAULT_MAX_AGE_BLOCKS = 20;
+    /// @dev Freshness bound: a verdict is accepted while block.number - checkedAtBlock <= maxAgeBlocks.
+    /// 60 blocks is about 18 s on Monad (about 0.30 s per block). Owner-settable via setMaxAgeBlocks.
+    uint64 public constant DEFAULT_MAX_AGE_BLOCKS = 60;
 
     bytes32 public constant INTENT_TYPEHASH =
         keccak256("Intent(address vault,bytes32 dataHash,bytes32 claimsHash,uint256 nonce,uint64 notAfterBlock)");
     bytes32 public constant VERDICT_TYPEHASH =
         keccak256("Verdict(bytes32 intentHash,uint8 outcome,uint64 checkedAtBlock,bytes32 receiptHash)");
     bytes32 public constant OVERRIDE_TYPEHASH = keccak256("Override(bytes32 intentHash)");
+
+    /// @dev Compile-time blocklist: selectors that move assets or shares out of the vault can
+    /// never be allowlisted. Computed from the interfaces, never hardcoded.
+    bytes4 public constant BLOCKED_WITHDRAW = IERC4626.withdraw.selector;
+    bytes4 public constant BLOCKED_REDEEM = IERC4626.redeem.selector;
+    bytes4 public constant BLOCKED_TRANSFER = IERC20.transfer.selector;
+    bytes4 public constant BLOCKED_FORCE_DEALLOCATE = IVaultV2.forceDeallocate.selector;
 
     address public immutable vault;
     address public validator;
@@ -53,6 +65,7 @@ contract ReasonGate is Ownable2Step, EIP712, ReentrancyGuard {
     error Refuted(bytes32 intentHash, bytes32 receiptHash);
     error OverrideNotAuthorized(bytes32 intentHash);
     error InvalidOutcome(uint8 outcome);
+    error SelectorBlocked(bytes4 selector);
 
     constructor(address initialOwner, address vault_, address validator_, address agent_, bytes4[] memory selectors)
         Ownable(initialOwner)
@@ -115,9 +128,15 @@ contract ReasonGate is Ownable2Step, EIP712, ReentrancyGuard {
         _setMaxAgeBlocks(newMaxAgeBlocks);
     }
 
-    /// @dev Never allowlist a selector that can move assets out of the vault.
+    /// @dev Never allowlist a selector that can move assets out of the vault. The blocklist
+    /// enforces this for withdraw, redeem, transfer, and forceDeallocate.
     function setAllowedSelector(bytes4 selector, bool allowed) external onlyOwner {
         _setSelector(selector, allowed);
+    }
+
+    function isBlockedSelector(bytes4 selector) public pure returns (bool) {
+        return selector == BLOCKED_WITHDRAW || selector == BLOCKED_REDEEM || selector == BLOCKED_TRANSFER
+            || selector == BLOCKED_FORCE_DEALLOCATE;
     }
 
     function _checkIntent(bytes calldata data, bytes32 claimsHash, uint256 nonce, uint64 notAfterBlock)
@@ -206,6 +225,7 @@ contract ReasonGate is Ownable2Step, EIP712, ReentrancyGuard {
     }
 
     function _setSelector(bytes4 selector, bool allowed) internal {
+        if (allowed && isBlockedSelector(selector)) revert SelectorBlocked(selector);
         allowedSelector[selector] = allowed;
         emit SelectorSet(selector, allowed);
     }

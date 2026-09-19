@@ -1,7 +1,13 @@
+node_modules/
 contracts/out/
 contracts/cache/
 contracts/broadcast/
-engine/node_modules/
 engine/coverage/
+worker/.wrangler/
+# Secrets never enter git: keys live only in gitignored env files and Cloudflare secrets.
 .env
 .env.*
+!.env.example
+*.env
+.dev.vars
+.dev.vars.*

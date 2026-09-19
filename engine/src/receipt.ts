@@ -9,7 +9,10 @@ import type { FailingItem, Verdict } from './verdict.ts'
 import { gateDomain, hashIntent } from './sign.ts'
 
 export const RULESET = 'REASON-R0'
-export const ENGINE_VERSION = '0.1.0'
+export const ENGINE_VERSION = '0.2.0'
+
+/** Carried by every receipt whose mandate requires no claim kinds. */
+export const PREMISE_CHECK_DISABLED = 'premise check disabled by mandate'
 
 function isPlainObject(value: object): boolean {
   const proto = Object.getPrototypeOf(value)
@@ -77,6 +80,8 @@ export type Receipt = {
   ruleset: typeof RULESET
   engineVersion: string
   modelId: string | null
+  /** Human-readable warnings about the check itself. */
+  notices: string[]
   intent: {
     chainId: number
     gate: Address
@@ -113,10 +118,12 @@ export function buildReceipt(input: ReceiptInput): Receipt {
     nonce: input.nonce,
     notAfterBlock: input.notAfterBlock,
   })
+  const mandate = parseMandate(input.mandate)
   return {
     ruleset: RULESET,
     engineVersion: ENGINE_VERSION,
     modelId: input.modelId,
+    notices: mandate.requiredKinds.length === 0 ? [PREMISE_CHECK_DISABLED] : [],
     intent: {
       chainId: input.chainId,
       gate: input.gate,
@@ -130,7 +137,7 @@ export function buildReceipt(input: ReceiptInput): Receipt {
     },
     claims,
     action: parseAction(input.action),
-    mandate: parseMandate(input.mandate),
+    mandate,
     observations: [...input.observations],
     results: [...input.results],
     verdict: {
