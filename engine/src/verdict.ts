@@ -1,4 +1,4 @@
-import type { ClaimKind } from './claims.ts'
+import type { AnyClaimKind, ClaimKind } from './claims.ts'
 import type { ClaimResult } from './compare.ts'
 import type { ActionMismatch } from './action.ts'
 import type { MandateViolation } from './mandate.ts'
@@ -11,7 +11,7 @@ export const OUTCOME_CODE = { PASS: 1, WAIT: 2, FAIL: 3 } as const
 export type ClaimItem = {
   source: 'claim'
   id: string
-  kind: ClaimKind
+  kind: AnyClaimKind
   status: 'FALSE' | 'UNVERIFIABLE'
   claimed: ClaimResult['claimed']
   observed: ClaimResult['observed']

@@ -1,6 +1,7 @@
 packages:
   - engine
   - worker
+  - shadow
 # wrangler's native toolchain: install scripts only place platform binaries.
 allowBuilds:
   esbuild: true

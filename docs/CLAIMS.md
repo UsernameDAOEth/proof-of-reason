@@ -115,3 +115,41 @@ Set by the principal.
 17. Verdict (ruleset REASON-R0): any FALSE, action mismatch, or mandate violation gives FAIL. Otherwise any UNVERIFIABLE or any missing mandate.requiredKinds gives WAIT. Otherwise PASS. On-chain codes: PASS 1, WAIT 2, FAIL 3.
 18. Premise check disabled: a mandate with zero requiredKinds lets an action PASS with no claims at all. Every receipt under such a mandate carries the notice "premise check disabled by mandate".
 19. Hashes: claimsHash = keccak256 of the UTF-8 canonical JSON of the claims array. receiptHash = keccak256 of the UTF-8 canonical JSON of the receipt. Canonical JSON sorts object keys by UTF-16 code unit, has no whitespace, writes bigints as base-10 strings, and rejects undefined and non-finite numbers.
+
+## Audit-only claim kinds (shadow runner)
+
+Used by the shadow runner for read-only audits (docs/SHADOW.md). The validator worker, mandates, and ReasonGate accept ClaimV0 kinds only.
+
+### kind vault_rate
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| id | string | yes | unique within the claim set |
+| sourceSpan | string or null | yes | verbatim text from the reason that this claim encodes; null when the agent sends typed claims |
+| kind | `"vault_rate"` | yes |  |
+| vault | string matching `^0x[0-9a-fA-F]{40}$` | yes | ERC-4626 vault address |
+| valuePct | number >= -100 | yes | claimed annualized share-price growth in percent |
+| basis | `"APY"` or `"APR"` | yes | annualization basis of valuePct |
+| compounding | `"continuous"` | yes | APY compounding convention |
+| lookbackBlocks | integer >= 1, <= 3000000 | yes | the rate is measured from block (pinned - lookbackBlocks) to the pinned block |
+| tolerancePp | number >= 0 | yes | allowed absolute difference, in percentage points |
+
+### kind balance
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| id | string | yes | unique within the claim set |
+| sourceSpan | string or null | yes | verbatim text from the reason that this claim encodes; null when the agent sends typed claims |
+| kind | `"balance"` | yes |  |
+| token | string matching `^0x[0-9a-fA-F]{40}$` | yes | ERC-20 token address |
+| holder | string matching `^0x[0-9a-fA-F]{40}$` | yes | address whose balance is claimed |
+| amount | string matching `^(0\|[1-9][0-9]*)$` | yes | claimed balance, token atomic units |
+| toleranceAtomic | string matching `^(0\|[1-9][0-9]*)$` | yes | allowed absolute difference, token atomic units |
+
+### Audit conventions
+
+1. Scope: vault_rate and balance are audit-only kinds for the shadow runner (docs/SHADOW.md). The validator worker and ReasonGate accept ClaimV0 kinds only.
+2. vault_rate: the share price is convertToAssets(1000000000000000000000000000000000000 shares), read at block (pinned - lookbackBlocks) and at the pinned block. elapsed is the difference of those two block timestamps. ratePerSecond = ln(assetsEnd / assetsStart) / elapsed. APR = ratePerSecond * 31536000. APY = exp(APR) - 1, the same continuous compounding convention as Morpho rates. totalAssets at the pinned block is recorded in the observation. lookbackBlocks is at most 3000000.
+3. vault_rate is UNVERIFIABLE when the vault has no code at the start block, the start share price is 0, or elapsed <= 0 seconds. The basis must match the observation; APR against APY is a schema error. The tolerance slack of TOLERANCE_SLACK_PP applies.
+4. balance: balanceOf(holder) of the token at the pinned block, in token atomic units. TRUE when |observed - amount| <= toleranceAtomic. UNVERIFIABLE when the token has no code at the pinned block.
+5. Reads for the audit-only kinds follow the same policy: one eth_call per read, sequential, ascending block order, never batched.

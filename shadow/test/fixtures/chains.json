@@ -1,0 +1,7 @@
+{
+  "links": { "self": "https://api.zerion.io/v1/chains/" },
+  "data": [
+    { "type": "chains", "id": "ethereum", "attributes": { "external_id": "0x1", "name": "Ethereum" } },
+    { "type": "chains", "id": "base", "attributes": { "external_id": "0x2105", "name": "Base" } }
+  ]
+}

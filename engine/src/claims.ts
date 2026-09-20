@@ -119,6 +119,19 @@ export const ClaimsV0 = z.array(ClaimV0).superRefine((claims, ctx) => {
 export const CLAIM_KINDS = ['rate', 'utilization', 'liquidity', 'identity'] as const
 export const ClaimKind = z.enum(CLAIM_KINDS)
 
+/** Fields every claim carries; shared with the audit-only kinds in erc4626.ts and erc20.ts. */
+export const claimCommon = common
+
+/**
+ * Audit-only claim kinds, used by the shadow runner (docs/SHADOW.md). The validator worker accepts
+ * ClaimV0 kinds only; these never reach a mandate or the gate.
+ */
+export const AUDIT_ONLY_KINDS = ['vault_rate', 'balance'] as const
+/** Shares probed with convertToAssets for a vault_rate claim, large enough to keep 1e-24 precision. */
+export const VAULT_PROBE_SHARES = 10n ** 36n
+/** Cap on vault_rate lookbackBlocks. The rate uses two reads per endpoint, so the cap is about history, not cost. */
+export const MAX_VAULT_LOOKBACK_BLOCKS = 3_000_000
+
 /** The allocation the agent says it is making. Compared against the decoded vault calldata. */
 export const ActionV0 = z.discriminatedUnion('fn', [
   z.strictObject({
@@ -160,6 +173,8 @@ export type UtilizationClaim = z.infer<typeof UtilizationClaim>
 export type LiquidityClaim = z.infer<typeof LiquidityClaim>
 export type IdentityClaim = z.infer<typeof IdentityClaim>
 export type ClaimKind = z.infer<typeof ClaimKind>
+export type AuditOnlyKind = (typeof AUDIT_ONLY_KINDS)[number]
+export type AnyClaimKind = ClaimKind | AuditOnlyKind
 export type ActionV0 = z.infer<typeof ActionV0>
 export type MandateV0 = z.infer<typeof MandateV0>
 
@@ -210,4 +225,13 @@ export const CONVENTIONS: readonly string[] = [
   'Verdict (ruleset REASON-R0): any FALSE, action mismatch, or mandate violation gives FAIL. Otherwise any UNVERIFIABLE or any missing mandate.requiredKinds gives WAIT. Otherwise PASS. On-chain codes: PASS 1, WAIT 2, FAIL 3.',
   'Premise check disabled: a mandate with zero requiredKinds lets an action PASS with no claims at all. Every receipt under such a mandate carries the notice "premise check disabled by mandate".',
   'Hashes: claimsHash = keccak256 of the UTF-8 canonical JSON of the claims array. receiptHash = keccak256 of the UTF-8 canonical JSON of the receipt. Canonical JSON sorts object keys by UTF-16 code unit, has no whitespace, writes bigints as base-10 strings, and rejects undefined and non-finite numbers.',
+]
+
+/** Conventions for the audit-only kinds, rendered into docs/CLAIMS.md. */
+export const AUDIT_CONVENTIONS: readonly string[] = [
+  'Scope: vault_rate and balance are audit-only kinds for the shadow runner (docs/SHADOW.md). The validator worker and ReasonGate accept ClaimV0 kinds only.',
+  `vault_rate: the share price is convertToAssets(${VAULT_PROBE_SHARES.toString()} shares), read at block (pinned - lookbackBlocks) and at the pinned block. elapsed is the difference of those two block timestamps. ratePerSecond = ln(assetsEnd / assetsStart) / elapsed. APR = ratePerSecond * ${SECONDS_PER_YEAR.toString()}. APY = exp(APR) - 1, the same continuous compounding convention as Morpho rates. totalAssets at the pinned block is recorded in the observation. lookbackBlocks is at most ${MAX_VAULT_LOOKBACK_BLOCKS}.`,
+  'vault_rate is UNVERIFIABLE when the vault has no code at the start block, the start share price is 0, or elapsed <= 0 seconds. The basis must match the observation; APR against APY is a schema error. The tolerance slack of TOLERANCE_SLACK_PP applies.',
+  'balance: balanceOf(holder) of the token at the pinned block, in token atomic units. TRUE when |observed - amount| <= toleranceAtomic. UNVERIFIABLE when the token has no code at the pinned block.',
+  'Reads for the audit-only kinds follow the same policy: one eth_call per read, sequential, ascending block order, never batched.',
 ]

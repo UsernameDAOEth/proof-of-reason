@@ -116,3 +116,31 @@ Source: DJ, 2026-09-19. "The Foundation RPC" is https://rpc.monad.xyz. Monad's d
   - a worst-case 41-read rate claim takes about 7.1 s
   - one check at this pace issues about 6 requests per second, under rpc.monad.xyz's 20 per second
 - Freshness bound: ReasonGate.DEFAULT_MAX_AGE_BLOCKS is 60, about 18 s at about 0.30 s per block (raised from 20 on 2026-09-19 by DJ: 3 s of reads plus signing, response, agent submission, and inclusion did not fit in 6 s). The owner can change it with setMaxAgeBlocks. docs/CLAIMS.md states it as the freshness bound. Latency from the Cloudflare edge to the archive RPC has not been measured.
+
+## 9. Zerion support for Monad (143)
+
+Status on 2026-09-19: not yet confirmed live. ZERION_API_KEY was not set in the Phase 2C-a session, so the Zerion API was never called, and no live response exists to cite yet.
+
+Documentary evidence (not a live response), from the official `zerion-cli` 1.9.1 package, published from github.com/zeriontech/zerion-ai by maintainers at zerion.io:
+- `skills/zerion/SKILL.md`, "Supported chains": the snapshot of the live catalog lists `monad`. The same file warns that the snapshot goes stale and that the live `/chains/` catalog is the source of truth.
+- `cli/router.js`: the trading-supported chain list, which mirrors `/chains/` flags.supports_trading at release, includes `"monad"`.
+- `skills/zerion/partners/monad-addresses.md` line 7: "**Monad chain name (Zerion CLI):** `monad`".
+
+How the live answer gets recorded: with ZERION_API_KEY set, run `cd shadow && pnpm zerion:chains`. It calls `GET https://api.zerion.io/v1/chains/`. It writes the catalog (id, name, external_id, and attributes per chain, never the key) to shadow/evidence/zerion-chains.json and prints whether an entry with external_id 0x8f (143) exists. Then replace this section's status line with that answer, citing the file and its `fetched_at`. The live test (shadow/test/live/audit.live.test.ts) also prints the answer.
+
+The shadow runner never assumes the Zerion chain id: it maps the EVM chain id to a Zerion chain id through `attributes.external_id` in the live catalog. If Monad is missing from the catalog, every Monad record is UNLOCATED with the reason "chain 143 is not in the Zerion chain catalog".
+
+## 10. Multi-chain Morpho configuration (engine/src/chains.ts)
+
+Source: `@morpho-org/morpho-ts` 2.15.0 (re-exported by `@morpho-org/morpho-sdk` 5.13.0), `addresses[ChainId]` in lib/esm/addresses.js, with `ChainId.EthMainnet = 1` and `ChainId.BaseMainnet = 8453` in lib/esm/chain.js. docs.morpho.org/developers/contracts/addresses (fetched 2026-09-18) lists every address below. On-chain checks were run on 2026-09-19 through public RPCs, read-only.
+
+| Chain | chainId | RPC variable | Morpho | Adaptive Curve IRM | On-chain check |
+| --- | --- | --- | --- | --- | --- |
+| Monad | 143 | MONAD_RPC_URL | 0xD5D960E8C380B724a48AC59E2DfF1b2CB4a1eAee | 0x09475a3D6eA8c314c592b1a3799bDE044E2F400F | rpc.monad.xyz: Morpho 15582 bytes, IRM 2282 bytes, isIrmEnabled true |
+| Base | 8453 | BASE_RPC_URL | 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb | 0x46415998764C29aB2a25CbeA6254146D50D22687 | mainnet.base.org: Morpho 15623 bytes, IRM 2323 bytes, isIrmEnabled true |
+| Ethereum | 1 | ETHEREUM_RPC_URL | 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb | 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC | ethereum-rpc.publicnode.com: Morpho 15623 bytes, IRM 2717 bytes, isIrmEnabled true |
+
+Notes:
+- The RPC variables hold archive-capable endpoints and are read by the shadow runner at call time. The engine never reads the environment.
+- viem 2.56.7's default Ethereum RPC (https://ethereum.reth.rs/rpc) answered HTTP 404 on 2026-09-19, so the Ethereum check used PublicNode instead. Public endpoints are not used by the runner; they were used here for these one-off read-only checks.
+- The same read policy as section 8 applies on every chain: one request per read, sequential, never batched.

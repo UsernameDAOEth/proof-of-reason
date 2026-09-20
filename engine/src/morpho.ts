@@ -8,6 +8,7 @@ import {
   parseClaim,
 } from './claims.ts'
 import type { ClaimV0, IdentityClaim, LiquidityClaim, RateClaim, UtilizationClaim } from './claims.ts'
+import type { ChainConfig } from './chains.ts'
 
 export type MarketState = {
   totalSupplyAssets: bigint
@@ -101,10 +102,15 @@ export interface MorphoReader {
   borrowRateView(params: MarketParams, market: MarketState, block: bigint): Promise<bigint>
 }
 
+/**
+ * Morpho reader pinned to blocks. Takes a chain config (docs/MONAD.md section 10) or, for existing
+ * callers, the Morpho address directly.
+ */
 export function viemMorphoReader(
   client: Pick<PublicClient, 'readContract'>,
-  morpho: Address,
+  chainOrMorpho: ChainConfig | Address,
 ): MorphoReader {
+  const morpho = typeof chainOrMorpho === 'string' ? chainOrMorpho : chainOrMorpho.morpho
   return {
     async market(id, block) {
       const [

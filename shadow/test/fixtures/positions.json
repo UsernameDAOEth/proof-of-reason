@@ -1,0 +1,30 @@
+{
+  "links": {
+    "self": "x",
+    "next": null
+  },
+  "data": [
+    {
+      "type": "positions",
+      "id": "base-usdc-asset",
+      "attributes": {
+        "position_type": "wallet",
+        "value": 12.5,
+        "quantity": {
+          "float": 12.5
+        },
+        "fungible_info": {
+          "name": "USD Coin",
+          "symbol": "USDC"
+        }
+      },
+      "relationships": {
+        "chain": {
+          "data": {
+            "id": "base"
+          }
+        }
+      }
+    }
+  ]
+}

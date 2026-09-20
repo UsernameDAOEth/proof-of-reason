@@ -1,0 +1,8 @@
+{
+  "errors": [
+    {
+      "title": "Unauthorized",
+      "detail": "Invalid API key"
+    }
+  ]
+}
