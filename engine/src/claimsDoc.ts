@@ -1,5 +1,16 @@
 import { z } from 'zod'
-import { AUDIT_CONVENTIONS, ActionV0, CONVENTIONS, ClaimV0, MandateV0 } from './claims.ts'
+import {
+  AUDIT_CONVENTIONS,
+  ActionV0,
+  CONVENTIONS,
+  ClaimV0,
+  DecisionClaim,
+  KuruBookClaim,
+  MandateV0,
+  PositionClaim,
+  TYPED_DECISION_CONVENTIONS,
+  TypedDecisionMandate,
+} from './claims.ts'
 import { BalanceClaim } from './erc20.ts'
 import { VaultRateClaim } from './erc4626.ts'
 import { ENGINE_VERSION, RULESET } from './receipt.ts'
@@ -104,6 +115,23 @@ export function renderClaimsMd(): string {
   }
   lines.push('### Audit conventions', '')
   AUDIT_CONVENTIONS.forEach((text, i) => lines.push(`${i + 1}. ${text}`))
+  lines.push('')
+  lines.push(
+    '## Typed-decision claim kinds',
+    '',
+    'For agents that emit a choice and probabilities instead of a reason (examples/jev-trader-gated). The validator worker accepts these under a typed-decision mandate.',
+    '',
+  )
+  for (const [label, schema] of [
+    ['kuru_book', KuruBookClaim],
+    ['decision', DecisionClaim],
+    ['position', PositionClaim],
+  ] as const) {
+    lines.push(`### kind ${label}`, '', fieldTable(variantsOf(schema)[0]!), '')
+  }
+  lines.push('### Typed-decision mandate', '', fieldTable(variantsOf(TypedDecisionMandate)[0]!), '')
+  lines.push('### Typed-decision conventions', '')
+  TYPED_DECISION_CONVENTIONS.forEach((text, i) => lines.push(`${i + 1}. ${text}`))
   lines.push('')
   return lines.join('\n')
 }

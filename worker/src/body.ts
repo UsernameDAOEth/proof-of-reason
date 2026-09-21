@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ActionV0, AddressString, ClaimsV0, DecimalString } from 'proof-of-reason-engine/claims'
+import { ActionV0, AddressString, ClaimsV0, DecimalString, TypedDecisionClaims } from 'proof-of-reason-engine/claims'
 import { MAX_CALLDATA_BYTES } from './config.ts'
 
 const UINT64_MAX = 2n ** 64n - 1n
@@ -22,9 +22,12 @@ export const CheckRequestV0 = z
       ),
     }),
     action: ActionV0,
-    claims: ClaimsV0.optional(),
+    // ClaimV0 kinds under a Morpho mandate, typed-decision kinds under a typed-decision mandate.
+    claims: z.union([ClaimsV0, TypedDecisionClaims]).optional(),
     prose: z.string().min(1).max(8_000).optional(),
     mandateId: z.string().min(1).max(64),
+    /** The model version the adapter reports, recorded as the receipt's model id. */
+    model: z.string().min(1).max(200).optional(),
   })
   .refine((b) => (b.claims === undefined) !== (b.prose === undefined), {
     message: 'send exactly one of claims or prose',

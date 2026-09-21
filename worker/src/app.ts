@@ -5,8 +5,8 @@ import { paymentMiddleware, x402ResourceServer } from '@x402/hono'
 import type { FacilitatorClient, RoutesConfig } from '@x402/core/server'
 import { ExactEvmScheme } from '@x402/evm/exact/server'
 import type { Address } from 'viem'
-import type { MandateV0 } from 'proof-of-reason-engine/claims'
-import { SchemaError } from 'proof-of-reason-engine/claims'
+import type { Mandate } from 'proof-of-reason-engine/claims'
+import { SchemaError, TYPED_DECISION_KINDS, isTypedDecisionMandate } from 'proof-of-reason-engine/claims'
 import { canonicalJson } from 'proof-of-reason-engine/receipt'
 import { CheckRequestV0 } from './body.ts'
 import { HttpError, runCheck } from './check.ts'
@@ -23,12 +23,12 @@ export type AppDeps = {
   facilitator: FacilitatorClient
   payTo: Address
   receipts: ReceiptStore
-  mandates: Readonly<Record<string, MandateV0>>
+  mandates: Readonly<Record<string, Mandate>>
   /** Built per request so the VALIDATOR_KEY secret is read at runtime, never at import time. */
   checkDeps: () => CheckDeps
 }
 
-type Vars = { Variables: { checkRequest: CheckRequestV0; mandate: MandateV0 } }
+type Vars = { Variables: { checkRequest: CheckRequestV0; mandate: Mandate } }
 
 const INTENT_HASH = /^0x[0-9a-f]{64}$/
 
@@ -90,6 +90,15 @@ export function createApp(deps: AppDeps) {
     if (mandate === undefined) return json(c, { error: `unknown mandate ${parsed.data.mandateId}` }, 404)
     if (parsed.data.claims === undefined) {
       return json(c, { error: 'prose extraction is not configured on this validator; send typed claims' }, 422)
+    }
+    // Claim kinds must match the mandate's type: typed-decision kinds only under a typed-decision
+    // mandate, ClaimV0 kinds only under a Morpho mandate.
+    const typedKinds = new Set<string>(TYPED_DECISION_KINDS)
+    const wanted = isTypedDecisionMandate(mandate)
+    const mismatched = parsed.data.claims.filter((claim) => typedKinds.has(claim.kind) !== wanted)
+    if (mismatched.length > 0) {
+      const expected = wanted ? 'typed-decision' : 'ClaimV0'
+      return json(c, { error: `mandate ${parsed.data.mandateId} takes ${expected} claim kinds` }, 400)
     }
     c.set('checkRequest', parsed.data)
     c.set('mandate', mandate)

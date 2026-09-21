@@ -122,9 +122,12 @@ export const ClaimKind = z.enum(CLAIM_KINDS)
 /** Fields every claim carries; shared with the audit-only kinds in erc4626.ts and erc20.ts. */
 export const claimCommon = common
 
+/** Claim kinds for typed-decision agents (engine/src/kuru.ts). Accepted under a typed-decision mandate. */
+export const TYPED_DECISION_KINDS = ['kuru_book', 'decision', 'position'] as const
+
 /**
  * Audit-only claim kinds, used by the shadow runner (docs/SHADOW.md). The validator worker accepts
- * ClaimV0 kinds only; these never reach a mandate or the gate.
+ * ClaimV0 kinds and, under a typed-decision mandate, the typed-decision kinds.
  */
 export const AUDIT_ONLY_KINDS = ['vault_rate', 'balance'] as const
 /** Shares probed with convertToAssets for a vault_rate claim, large enough to keep 1e-24 precision. */
@@ -159,6 +162,15 @@ export const ActionV0 = z.discriminatedUnion('fn', [
     market: Bytes32.describe('Morpho Blue market id encoded in the adapter data'),
     assets: DecimalString.describe('loan-token atomic units'),
   }),
+  z.strictObject({
+    fn: z.literal('kuru_order').describe('Kuru OrderBook batchUpdate: one post-only order per block'),
+    venue: AddressString.describe('the Kuru OrderBook market the gate forwards to'),
+    side: z.enum(['buy', 'sell', 'cancel-only']),
+    price: DecimalString.describe('price in pricePrecision units, exactly as in the calldata; 0 for cancel-only'),
+    size: DecimalString.describe('size in sizePrecision units, exactly as in the calldata; 0 for cancel-only'),
+    cancels: z.number().int().min(0).max(64).describe('how many order ids the call cancels'),
+    postOnly: z.boolean(),
+  }),
 ])
 
 /** The principal's mandate. */
@@ -174,7 +186,8 @@ export type LiquidityClaim = z.infer<typeof LiquidityClaim>
 export type IdentityClaim = z.infer<typeof IdentityClaim>
 export type ClaimKind = z.infer<typeof ClaimKind>
 export type AuditOnlyKind = (typeof AUDIT_ONLY_KINDS)[number]
-export type AnyClaimKind = ClaimKind | AuditOnlyKind
+export type TypedDecisionKind = (typeof TYPED_DECISION_KINDS)[number]
+export type AnyClaimKind = ClaimKind | AuditOnlyKind | TypedDecisionKind
 export type ActionV0 = z.infer<typeof ActionV0>
 export type MandateV0 = z.infer<typeof MandateV0>
 
@@ -202,6 +215,90 @@ export function parseAction(input: unknown): ActionV0 {
 
 export function parseMandate(input: unknown): MandateV0 {
   return parseWith(MandateV0, input, 'MandateV0')
+}
+
+/**
+ * A typed-decision model emits a choice and probabilities, never a reason. For that class of agent
+ * the reason is the state the model was shown plus the answer it gave, so these three kinds carry
+ * the book it read, the answer it returned, and the position the order would leave behind.
+ */
+export const KuruBookClaim = z.strictObject({
+  ...common,
+  kind: z.literal('kuru_book'),
+  market: AddressString.describe('Kuru OrderBook market the model read'),
+  bestBid: z.number().positive().describe('claimed best bid, quote per base'),
+  bestAsk: z.number().positive().describe('claimed best ask, quote per base'),
+  tolerancePp: z
+    .number()
+    .min(0)
+    .describe('allowed relative difference in percent: |observed - claimed| / claimed * 100'),
+})
+
+export const DecisionClaim = z.strictObject({
+  ...common,
+  kind: z.literal('decision'),
+  answer: z.string().min(1).max(64).describe('the answer the model returned, verbatim'),
+  allowedValues: z
+    .array(z.string().min(1).max(64))
+    .min(1)
+    .max(16)
+    .describe('every answer the principal accepts; an answer outside this set is never defaulted'),
+  probability: z.number().min(0).max(1).describe('the probability the model gave its answer'),
+  minProbability: z.number().min(0).max(1).describe('the lowest probability the principal accepts'),
+})
+
+export const PositionClaim = z.strictObject({
+  ...common,
+  kind: z.literal('position'),
+  gate: AddressString.describe('the gate whose balances are the position'),
+  market: AddressString.describe('Kuru OrderBook market used to price the base balance'),
+  maxNotionalUsd: z.number().positive().describe('cap on base balance times best bid, in quote units'),
+  maxPositionBase: z.number().positive().describe('cap on the base balance, in whole base units'),
+})
+
+export const TypedDecisionClaim = z.discriminatedUnion('kind', [KuruBookClaim, DecisionClaim, PositionClaim])
+export const TypedDecisionClaims = z.array(TypedDecisionClaim).min(1)
+
+/** The principal's mandate for a typed-decision agent. The claims may never widen these. */
+export const TypedDecisionMandate = z.strictObject({
+  type: z.literal('typed-decision'),
+  gate: AddressString.describe('the KuruGate that holds the trading balance'),
+  market: AddressString.describe('the only Kuru market this mandate covers'),
+  allowedAnswers: z.array(z.string().min(1).max(64)).min(1).describe('every answer the principal accepts'),
+  minProbability: z.number().min(0).max(1).describe('the lowest probability the principal accepts'),
+  maxNotionalUsd: z.number().positive().describe('cap on the position value in quote units'),
+  maxPositionBase: z.number().positive().describe('cap on the base balance in whole base units'),
+  requiredKinds: z.array(z.enum(TYPED_DECISION_KINDS)).describe('claim kinds that must be present for a PASS'),
+})
+
+/** Either mandate shape. A mandate without a type is the Morpho mandate. */
+export const Mandate = z.union([MandateV0, TypedDecisionMandate])
+
+export type KuruBookClaim = z.infer<typeof KuruBookClaim>
+export type DecisionClaim = z.infer<typeof DecisionClaim>
+export type PositionClaim = z.infer<typeof PositionClaim>
+export type TypedDecisionClaim = z.infer<typeof TypedDecisionClaim>
+export type TypedDecisionMandate = z.infer<typeof TypedDecisionMandate>
+export type Mandate = z.infer<typeof Mandate>
+
+export function parseTypedDecisionClaims(input: unknown): TypedDecisionClaim[] {
+  return parseWith(TypedDecisionClaims, input, 'typed-decision claims')
+}
+
+/** Either claim family: ClaimV0 kinds, or the typed-decision kinds. Never a mix. */
+export const AnyClaims = z.union([ClaimsV0, TypedDecisionClaims])
+export type AnyClaim = ClaimV0 | TypedDecisionClaim
+
+export function parseAnyClaims(input: unknown): AnyClaim[] {
+  return parseWith(AnyClaims, input, 'claim list')
+}
+
+export function parseAnyMandate(input: unknown): Mandate {
+  return parseWith(Mandate, input, 'mandate')
+}
+
+export function isTypedDecisionMandate(mandate: Mandate): mandate is TypedDecisionMandate {
+  return 'type' in mandate && mandate.type === 'typed-decision'
 }
 
 /** Human-readable conventions, rendered into docs/CLAIMS.md. */
@@ -234,4 +331,13 @@ export const AUDIT_CONVENTIONS: readonly string[] = [
   'vault_rate is UNVERIFIABLE when the vault has no code at the start block, the start share price is 0, or elapsed <= 0 seconds. The basis must match the observation; APR against APY is a schema error. The tolerance slack of TOLERANCE_SLACK_PP applies.',
   'balance: balanceOf(holder) of the token at the pinned block, in token atomic units. TRUE when |observed - amount| <= toleranceAtomic. UNVERIFIABLE when the token has no code at the pinned block.',
   'Reads for the audit-only kinds follow the same policy: one eth_call per read, sequential, ascending block order, never batched.',
+]
+
+/** Conventions for the typed-decision kinds, rendered into docs/CLAIMS.md. */
+export const TYPED_DECISION_CONVENTIONS: readonly string[] = [
+  'Scope: kuru_book, decision, and position describe a typed-decision agent, one that emits a choice and probabilities and never a reason. The reason on record is the state the model was shown plus the answer it gave.',
+  'kuru_book: bestBid and bestAsk come from the Kuru OrderBook at the pinned block (bestBidAsk(), 1e18-scaled, plus getL2Book() for depth). Both sides must hold: TRUE when |observed - claimed| / claimed * 100 <= tolerancePp for the bid and the ask.',
+  'decision: TRUE when the answer is in allowedValues and probability >= minProbability. An answer outside allowedValues is UNVERIFIABLE, which gives WAIT, and is never mapped to a default side. A recognised answer below minProbability is FALSE, which gives FAIL.',
+  'position: the gate is the position. positionBase is the gate base balance at the pinned block in whole base units, and notionalUsd is positionBase times the best bid. TRUE when positionBase <= maxPositionBase and notionalUsd <= maxNotionalUsd; a breach is FALSE, which gives FAIL, and the failing item carries the observed numbers.',
+  'A typed-decision mandate fixes the gate, the market, the allowed answers, the minimum probability, and both caps. A claim that widens any of them is a mandate violation, which gives FAIL: the agent cannot grant itself a looser limit.',
 ]

@@ -10,6 +10,7 @@ import {
 import type { Address, Hex } from 'viem'
 import { parseAction } from './claims.ts'
 import type { ActionV0 } from './claims.ts'
+import { decodeKuruOrder } from './kuru.ts'
 import type { MarketParams } from './morpho.ts'
 
 /** Allocator entry points, matching the vault sources pinned in contracts/lib. */
@@ -94,9 +95,30 @@ function compareLeg(
 
 export type ActionCheck = { decoded: DecodedAction | null; mismatches: ActionMismatch[] }
 
+/** Compares a stated Kuru order with the batchUpdate calldata the gate would forward. */
+function checkKuruOrder(stated: Extract<ActionV0, { fn: 'kuru_order' }>, data: Hex): ActionCheck {
+  let order
+  try {
+    order = decodeKuruOrder(data)
+  } catch (error) {
+    const reason = error instanceof Error ? error.message.split('\n')[0]! : String(error)
+    return { decoded: null, mismatches: [mismatch('calldata', stated.fn, `undecodable: ${reason}`)] }
+  }
+  const mismatches: ActionMismatch[] = []
+  if (order.side !== stated.side) mismatches.push(mismatch('side', stated.side, order.side))
+  if ((order.price ?? 0n) !== BigInt(stated.price)) mismatches.push(mismatch('price', stated.price, (order.price ?? 0n).toString()))
+  if ((order.size ?? 0n) !== BigInt(stated.size)) mismatches.push(mismatch('size', stated.size, (order.size ?? 0n).toString()))
+  if (order.cancels !== stated.cancels) mismatches.push(mismatch('cancels', stated.cancels, order.cancels))
+  if (order.postOnly !== stated.postOnly) {
+    mismatches.push(mismatch('postOnly', String(stated.postOnly), String(order.postOnly)))
+  }
+  return { decoded: null, mismatches }
+}
+
 /** Decode the calldata and compare it with the stated action. Any mismatch is a FAIL. */
 export function checkAction(statedInput: ActionV0, data: Hex): ActionCheck {
   const stated = parseAction(statedInput)
+  if (stated.fn === 'kuru_order') return checkKuruOrder(stated, data)
   let decoded: DecodedAction
   try {
     decoded = decodeVaultCall(data)

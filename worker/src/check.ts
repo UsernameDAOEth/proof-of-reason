@@ -1,10 +1,13 @@
 import type { Address, Hex, LocalAccount } from 'viem'
 import { checkAction } from 'proof-of-reason-engine/action'
-import type { MandateV0 } from 'proof-of-reason-engine/claims'
+import { isTypedDecisionMandate, parseClaims, parseTypedDecisionClaims } from 'proof-of-reason-engine/claims'
+import type { ClaimV0, Mandate, TypedDecisionClaim } from 'proof-of-reason-engine/claims'
 import { compare } from 'proof-of-reason-engine/compare'
-import { checkMandate } from 'proof-of-reason-engine/mandate'
+import { checkMandate, checkTypedDecisionMandate } from 'proof-of-reason-engine/mandate'
 import { observeAll } from 'proof-of-reason-engine/morpho'
 import type { MorphoReader } from 'proof-of-reason-engine/morpho'
+import { observeTypedDecisionAll } from 'proof-of-reason-engine/kuru'
+import type { KuruReader } from 'proof-of-reason-engine/kuru'
 import { buildReceipt, canonicalJson, receiptHash } from 'proof-of-reason-engine/receipt'
 import type { Receipt } from 'proof-of-reason-engine/receipt'
 import { gateDomain, signVerdict } from 'proof-of-reason-engine/sign'
@@ -26,6 +29,8 @@ export class HttpError extends Error {
 
 export type CheckDeps = {
   reader: MorphoReader
+  /** Kuru reads, used by typed-decision mandates. */
+  kuru: KuruReader
   getBlockNumber: () => Promise<bigint>
   /** Built from the VALIDATOR_KEY secret at request time. Never logged. */
   account: LocalAccount
@@ -56,7 +61,7 @@ export type CheckResult = {
 
 export async function runCheck(
   request: CheckRequestV0,
-  mandate: MandateV0,
+  mandate: Mandate,
   deps: CheckDeps,
 ): Promise<CheckResult> {
   if (request.intent.vault.toLowerCase() !== deps.vault.toLowerCase()) {
@@ -68,13 +73,28 @@ export async function runCheck(
   }
   const data = request.intent.data as Hex
 
+  // The mandate decides which claim family is legal. A typed-decision mandate takes kuru_book,
+  // decision and position; a Morpho mandate takes the ClaimV0 kinds. Never a mix.
+  const typedDecision = isTypedDecisionMandate(mandate)
+  let typedClaims: TypedDecisionClaim[] | null = null
+  let v0Claims: ClaimV0[] | null = null
+  try {
+    if (typedDecision) typedClaims = parseTypedDecisionClaims(claims)
+    else v0Claims = parseClaims(claims)
+  } catch {
+    const expected = typedDecision ? 'typed-decision' : 'ClaimV0'
+    throw new HttpError(400, `mandate ${request.mandateId} takes ${expected} claim kinds`)
+  }
+
   let head: bigint
   let observations
   try {
     head = await deps.getBlockNumber()
     const pinned = head - CHECK_LAG_BLOCKS
     // One read at a time, claim by claim, block by block (docs/MONAD.md, RPC policy).
-    observations = await observeAll(deps.reader, claims, pinned)
+    observations = typedClaims
+      ? await observeTypedDecisionAll(deps.kuru, typedClaims, pinned)
+      : await observeAll(deps.reader, v0Claims!, pinned)
   } catch (error) {
     // No payment is settled on a 5xx. The upstream message is not echoed.
     throw new HttpError(503, 'chain state unavailable')
@@ -86,7 +106,9 @@ export async function runCheck(
   const verdict = decide({
     results,
     actionMismatches: action.mismatches,
-    mandateViolations: checkMandate(action.decoded, mandate),
+    mandateViolations: typedDecision
+      ? checkTypedDecisionMandate(typedClaims, mandate)
+      : checkMandate(action.decoded, mandate),
     requiredKinds: mandate.requiredKinds,
   })
 
@@ -104,7 +126,7 @@ export async function runCheck(
     results,
     verdict,
     checkedAtBlock,
-    modelId: null,
+    modelId: request.model ?? null,
   })
   const receiptJson = canonicalJson(receipt)
   const hash = receiptHash(receipt)

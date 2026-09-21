@@ -1,0 +1,10 @@
+{
+  "type": "typed-decision",
+  "gate": "0x0000000000000000000000000000000000000000",
+  "market": "0x065C9d28E428A0db40191a54d33d5b7c71a9C394",
+  "allowedAnswers": ["buy", "sell"],
+  "minProbability": 0.6,
+  "maxNotionalUsd": 100,
+  "maxPositionBase": 1000,
+  "requiredKinds": ["kuru_book", "decision", "position"]
+}

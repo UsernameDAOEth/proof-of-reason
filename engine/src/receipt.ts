@@ -1,9 +1,8 @@
 import { keccak256, stringToBytes } from 'viem'
 import type { Address, Hex } from 'viem'
-import { parseAction, parseClaims, parseMandate } from './claims.ts'
-import type { ActionV0, ClaimKind, ClaimV0, MandateV0 } from './claims.ts'
-import type { Observation } from './morpho.ts'
-import type { ClaimResult } from './compare.ts'
+import { parseAction, parseAnyClaims, parseAnyMandate, parseClaims } from './claims.ts'
+import type { ActionV0, AnyClaim, AnyClaimKind, ClaimV0, Mandate } from './claims.ts'
+import type { AnyObservation, ClaimResult } from './compare.ts'
 import { OUTCOME_CODE } from './verdict.ts'
 import type { FailingItem, Verdict } from './verdict.ts'
 import { gateDomain, hashIntent } from './sign.ts'
@@ -65,10 +64,10 @@ export type ReceiptInput = {
   data: Hex
   nonce: bigint
   notAfterBlock: bigint
-  claims: readonly ClaimV0[]
+  claims: readonly AnyClaim[]
   action: ActionV0
-  mandate: MandateV0
-  observations: readonly Observation[]
+  mandate: Mandate
+  observations: readonly AnyObservation[]
   results: readonly ClaimResult[]
   verdict: Verdict
   checkedAtBlock: bigint
@@ -93,22 +92,22 @@ export type Receipt = {
     notAfterBlock: bigint
     intentHash: Hex
   }
-  claims: ClaimV0[]
+  claims: AnyClaim[]
   action: ActionV0
-  mandate: MandateV0
-  observations: Observation[]
+  mandate: Mandate
+  observations: AnyObservation[]
   results: ClaimResult[]
   verdict: {
     outcome: Verdict['outcome']
     outcomeCode: 1 | 2 | 3
     checkedAtBlock: bigint
     failing: FailingItem[]
-    missingKinds: ClaimKind[]
+    missingKinds: AnyClaimKind[]
   }
 }
 
 export function buildReceipt(input: ReceiptInput): Receipt {
-  const claims = parseClaims(input.claims)
+  const claims = parseAnyClaims(input.claims)
   const dataHash = keccak256(input.data)
   const boundClaimsHash = hashCanonical(claims)
   const intentHash = hashIntent(gateDomain(input.chainId, input.gate), {
@@ -118,7 +117,7 @@ export function buildReceipt(input: ReceiptInput): Receipt {
     nonce: input.nonce,
     notAfterBlock: input.notAfterBlock,
   })
-  const mandate = parseMandate(input.mandate)
+  const mandate = parseAnyMandate(input.mandate)
   return {
     ruleset: RULESET,
     engineVersion: ENGINE_VERSION,

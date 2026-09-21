@@ -1,7 +1,7 @@
-import type { AnyClaimKind, ClaimKind } from './claims.ts'
+import type { AnyClaimKind } from './claims.ts'
 import type { ClaimResult } from './compare.ts'
 import type { ActionMismatch } from './action.ts'
-import type { MandateViolation } from './mandate.ts'
+import type { AnyMandateViolation } from './mandate.ts'
 
 export type Outcome = 'PASS' | 'WAIT' | 'FAIL'
 
@@ -18,20 +18,20 @@ export type ClaimItem = {
   block: bigint
 }
 
-export type FailingItem = ClaimItem | ActionMismatch | MandateViolation
+export type FailingItem = ClaimItem | ActionMismatch | AnyMandateViolation
 
 export type VerdictInput = {
   results: readonly ClaimResult[]
   actionMismatches: readonly ActionMismatch[]
-  mandateViolations: readonly MandateViolation[]
-  requiredKinds: readonly ClaimKind[]
+  mandateViolations: readonly AnyMandateViolation[]
+  requiredKinds: readonly AnyClaimKind[]
 }
 
 export type Verdict = {
   outcome: Outcome
   /** Every item that is not TRUE: FALSE and UNVERIFIABLE claims, action mismatches, mandate violations. */
   failing: FailingItem[]
-  missingKinds: ClaimKind[]
+  missingKinds: AnyClaimKind[]
 }
 
 /**

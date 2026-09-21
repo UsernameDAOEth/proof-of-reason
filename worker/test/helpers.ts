@@ -9,7 +9,10 @@ import type {
   VerifyResponse,
 } from '@x402/core/types'
 import { vaultAbi } from 'proof-of-reason-engine/action'
+import { kuruOrderBookAbi } from 'proof-of-reason-engine/kuru'
+import type { KuruMarketParams, KuruReader } from 'proof-of-reason-engine/kuru'
 import type { MarketParams, MarketState, MorphoReader } from 'proof-of-reason-engine/morpho'
+import type { TypedDecisionMandate } from 'proof-of-reason-engine/claims'
 import type { ReceiptStore } from '../src/app.ts'
 import type { CheckDeps } from '../src/check.ts'
 import { CHAIN_ID, NETWORK, USDC } from '../src/config.ts'
@@ -126,8 +129,162 @@ export class MemoryStore implements ReceiptStore {
   }
 }
 
-export function checkDeps(account: LocalAccount, reader: MorphoReader = new FakeReader()): CheckDeps {
-  return { reader, getBlockNumber: async () => HEAD, account, chainId: CHAIN_ID, gate: GATE, vault: VAULT }
+export function checkDeps(
+  account: LocalAccount,
+  reader: MorphoReader = new FakeReader(),
+  overrides: Partial<CheckDeps> = {},
+): CheckDeps {
+  return {
+    reader,
+    kuru: new FakeKuruReader(),
+    getBlockNumber: async () => HEAD,
+    account,
+    chainId: CHAIN_ID,
+    gate: GATE,
+    vault: VAULT,
+    ...overrides,
+  }
+}
+
+/** Kuru MON-USDC and a KuruGate: a typed-decision deployment serves the venue as its vault. */
+export const KURU_MARKET: Address = '0x065C9d28E428A0db40191a54d33d5b7c71a9C394'
+export const KURU_GATE: Address = '0x2Ff1552DD09f87d6774229Ee4A0b3B9e5f7F4bdE'
+
+/** Kuru MON-USDC parameters at block 106617487 (docs/MONAD.md section 11). */
+export const KURU_PARAMS: KuruMarketParams = {
+  pricePrecision: 100_000_000n,
+  sizePrecision: 10_000_000_000n,
+  baseDecimals: 18n,
+}
+export const BEST_BID = 25_188_000_000_000_000n
+export const BEST_ASK = 25_199_000_000_000_000n
+
+function bookPayload(bids: [number, number][], asks: [number, number][]): Hex {
+  const word = (v: bigint) => v.toString(16).padStart(64, '0')
+  const level = ([p, s]: [number, number]) =>
+    word(BigInt(Math.round(p * 1e8))) + word(BigInt(Math.round(s * 1e10)))
+  return `0x${word(HEAD - 3n)}${bids.map(level).join('')}${word(0n)}${asks.map(level).join('')}${word(0n)}` as Hex
+}
+
+export class FakeKuruReader implements KuruReader {
+  calls: string[] = []
+  fail = false
+  bestBid = BEST_BID
+  bestAsk = BEST_ASK
+  /** Native MON held by the gate: the base balance of a MON-USDC position. */
+  balance = 500n * 10n ** 18n
+
+  async bestBidAsk(_market: Address, block: bigint) {
+    this.calls.push(`bestBidAsk@${block}`)
+    if (this.fail) throw new Error('upstream RPC exploded with secret-free detail')
+    return { bestBid: this.bestBid, bestAsk: this.bestAsk }
+  }
+
+  async l2Book(_market: Address, block: bigint): Promise<Hex> {
+    this.calls.push(`l2Book@${block}`)
+    return bookPayload(
+      [
+        [0.025188, 19_841],
+        [0.025187, 19_800],
+      ],
+      [
+        [0.025199, 19_800],
+        [0.025204, 19_841],
+      ],
+    )
+  }
+
+  async marketParams(_market: Address, block: bigint) {
+    this.calls.push(`marketParams@${block}`)
+    return KURU_PARAMS
+  }
+
+  async nativeBalance(_address: Address, block: bigint) {
+    this.calls.push(`nativeBalance@${block}`)
+    return this.balance
+  }
+}
+
+/** The example's mandate, kept in step with examples/jev-trader-gated/mandate.json. */
+export const JEV_MANDATE: TypedDecisionMandate = {
+  type: 'typed-decision',
+  gate: KURU_GATE,
+  market: KURU_MARKET,
+  allowedAnswers: ['buy', 'sell'],
+  minProbability: 0.6,
+  maxNotionalUsd: 100,
+  maxPositionBase: 1_000,
+  requiredKinds: ['kuru_book', 'decision', 'position'],
+}
+
+export const JEV_MANDATES = { 'jev-mon-usdc-v1': JEV_MANDATE } as const
+
+/** One post-only buy at the best bid, cancelling last block's order. */
+export function batchUpdateData(price = 2_518_800n, size = 4_000_000_000n, cancels = 1): Hex {
+  return encodeFunctionData({
+    abi: kuruOrderBookAbi,
+    functionName: 'batchUpdate',
+    args: [
+      [Number(price)],
+      [size],
+      [],
+      [],
+      Array.from({ length: cancels }, (_, i) => i + 1),
+      true,
+    ],
+  })
+}
+
+export function typedDecisionBody(overrides: Record<string, unknown> = {}) {
+  return {
+    intent: {
+      vault: KURU_MARKET,
+      data: batchUpdateData(),
+      nonce: '7',
+      notAfterBlock: (HEAD + 50n).toString(),
+    },
+    action: {
+      fn: 'kuru_order',
+      venue: KURU_MARKET,
+      side: 'buy',
+      price: '2518800',
+      size: '4000000000',
+      cancels: 1,
+      postOnly: true,
+    },
+    claims: [
+      {
+        id: 'b1',
+        kind: 'kuru_book',
+        sourceSpan: null,
+        market: KURU_MARKET,
+        bestBid: 0.025188,
+        bestAsk: 0.025199,
+        tolerancePp: 0.1,
+      },
+      {
+        id: 'd1',
+        kind: 'decision',
+        sourceSpan: null,
+        answer: 'buy',
+        allowedValues: ['buy', 'sell'],
+        probability: 0.71,
+        minProbability: 0.6,
+      },
+      {
+        id: 'p1',
+        kind: 'position',
+        sourceSpan: null,
+        gate: KURU_GATE,
+        market: KURU_MARKET,
+        maxNotionalUsd: 100,
+        maxPositionBase: 1_000,
+      },
+    ],
+    mandateId: 'jev-mon-usdc-v1',
+    model: 'MrJev v0.1.0 (jev-trader b587759)',
+    ...overrides,
+  }
 }
 
 /** Move market A to a 6 USDC target; B takes all that remains. */

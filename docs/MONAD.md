@@ -144,3 +144,80 @@ Notes:
 - The RPC variables hold archive-capable endpoints and are read by the shadow runner at call time. The engine never reads the environment.
 - viem 2.56.7's default Ethereum RPC (https://ethereum.reth.rs/rpc) answered HTTP 404 on 2026-09-19, so the Ethereum check used PublicNode instead. Public endpoints are not used by the runner; they were used here for these one-off read-only checks.
 - The same read policy as section 8 applies on every chain: one request per read, sequential, never batched.
+
+## 11. jev-trader and Kuru (Phase 2C-b)
+
+### jev-trader's call path, pinned
+
+Source: github.com/jarrodwatts/jev-trader at commit b587759e459ea049590102e54a0b07800864cdc3 (branch main, MIT), vendored as a submodule at examples/jev-trader-gated/upstream and never edited.
+
+At this commit the bot does **not** call a router swap. It posts a post-only limit order on the Kuru MON-USDC OrderBook every block, and its funds sit in the Kuru MarginAccount:
+- `src/market.ts:189` encodes `batchUpdate(buyPrices, buySizes, sellPrices, sellSizes, orderIdsToCancel, postOnly)` and `src/market.ts:175-181` sends it to `config.market` with `value: 0`. The comment at `src/market.ts:183` states the reason: "Funds come from the margin account, so value is 0".
+- `src/config.ts` defaults: `market` 0x065C9d28E428A0db40191a54d33d5b7c71a9C394 (Kuru MON-USDC), `marginAccount` 0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5, `chainId` 143.
+- ABIs come from the official SDK: `import OrderBookAbi from "@kuru-labs/kuru-sdk/abi/OrderBook.json"`.
+- The only mention of a market order anywhere in the tree is `scripts/abi-selectors.ts`, which prints selectors for `placeAndExecuteMarketBuy` and `placeAndExecuteMarketSell`. Neither is called by the trader. `grep -riE "anyToAnySwap|swap|router"` over the tree finds no router use.
+
+Resolved selectors (`cast sig`, signatures from the SDK ABIs):
+
+| Call | Selector | Contract |
+| --- | --- | --- |
+| batchUpdate(uint32[],uint96[],uint32[],uint96[],uint40[],bool) | 0x5339c59f | OrderBook (the market) |
+| placeAndExecuteMarketBuy(uint96,uint256,bool,bool) | 0x7c51d6cf | OrderBook (the market), payable |
+| placeAndExecuteMarketSell(uint96,uint256,bool,bool) | 0x532c46db | OrderBook (the market), payable |
+| anyToAnySwap(address[],bool[],bool[],address,address,uint256,uint256) | 0xffa5210a | Router |
+| MarginAccount withdraw(uint256,address) | 0x00f714ce | MarginAccount |
+| MarginAccount deposit(address,address,uint256) | 0x8340f549 | MarginAccount |
+
+### Kuru Monad mainnet addresses
+
+Source: docs.kuru.io/contracts/Contract-addresses, read from https://docs.kuru.io/llms-full.txt on 2026-09-20 (the HTML pages render client side; the text mirror carries the same tables).
+
+| Contract | Address | On-chain check at block 106617487 |
+| --- | --- | --- |
+| Router (market factory and `anyToAnySwap`) | 0xd651346d7c789536ebf06dc72aE3C8502cd695CC | has code; `verifiedMarket(MON-USDC)` is true; `marginAccountAddress()` returns the MarginAccount below |
+| MarginAccount | 0x2A68ba1833cDf93fa9Da1EEbd7F46242aD8E90c5 | matches the Router's `marginAccountAddress()` and jev-trader's default |
+| MON-USDC market (OrderBook) | 0x065C9d28E428A0db40191a54d33d5b7c71a9C394 | has code; matches jev-trader's default |
+| USDC | 0x754704Bc059F8C67012fEd69BC8A327a5aafb603 | same USDC as section 1 |
+| WMON | 0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A | same wNative as the Morpho registry in section 1 |
+
+`getMarketParams()` on the market at block 106617487 returns pricePrecision 1e8, sizePrecision 1e10, base token 0x0000000000000000000000000000000000000000 (native MON, 18 decimals), quote token USDC (6 decimals), tickSize 100, minSize 2e12, maxSize 2e18. The base asset being the zero address is why a market buy is payable: it takes native MON as value.
+
+### Margin funding, and who can move it
+
+Kuru limit orders draw from the MarginAccount, not from the trader's wallet, so a gated agent's
+trading balance lives there. Two facts from the pinned tree and the SDK ABI decide the design:
+
+- `deposit(address user, address token, uint256 amount)` (0x8340f549) credits the **user passed to
+  it**, so anyone can fund any account. Native MON is deposited with `token` = address(0) and the
+  amount as `value`: `upstream/src/market.ts:216-223` builds exactly that transaction, and
+  `upstream/src/market.ts:247-249` reads a balance back with `getBalance(user, token)` (0xd4fac45d).
+- `withdraw(uint256 amount, address token)` (0x00f714ce) moves **only the caller's own balance, to
+  the caller**. Nobody can pull another account's margin, and an account with no code path to the
+  MarginAccount can never get its own margin back.
+
+KuruGate therefore carries the MarginAccount as an immutable address and two `onlyOwner` functions:
+`depositMargin(token, amount)` (approve for that deposit only, then reset to zero) and
+`withdrawMargin(token, amount)`, whose proceeds can only land in the gate, from where only the owner
+can take them with `withdraw`. The agent key can call neither, and `execute` can never reach the
+MarginAccount: the venue is immutable, and both margin withdraw selectors are blocklisted at compile
+time. `marginBalance(token)` exposes the gate's own balance for observers.
+
+### The answer set jev-trader actually uses
+
+`upstream/src/model.ts:6` at b587759: `export type Action = "buy" | "sell" | "hold";`, and line 5
+records what they mean: "Models answer buy or sell. `hold` only appears on late blocks (no decision
+was made)." The two criteria the model is scored against are `buy` and `sell`
+(`upstream/src/model.ts:52-53`). There is no UP, DOWN or FLAT anywhere in the tree, so
+`examples/jev-trader-gated/mandate.json` lists `["buy", "sell"]` and `hold` is treated as no
+decision, which places no order and asks for no verdict.
+
+### Reading the book at a pinned block
+
+Two reads, both `view` on the market, both pinned with `eth_call` at a block:
+- `bestBidAsk()` (0xb4de8b70) returns (bestBid, bestAsk) as 1e18-scaled quote-per-base prices.
+- `getL2Book()` (0x46fdfbb1) returns ABI-encoded `bytes`: one word holding the block number, then (price, size) word pairs for bids terminated by a zero price, then the same for asks. Prices are scaled by pricePrecision and sizes by sizePrecision, so depth comes from this call. jev-trader decodes it the same way in `src/book.ts:112-130` (`decodeL2Book`), and its `SEL_GET_L2_BOOK` constant equals the selector above.
+- Optional: `getVaultParams()` (0x88bb4f60) merges the Kuru AMM vault ladder. On MON-USDC `vaultBidOrderSize` is 0, so the vault is inactive and the second read is skipped.
+
+Verified at block 106617487 through rpc.monad.xyz: `bestBidAsk()` gave 25188000000000000 and 25199000000000000 (0.025188 and 0.025199 USDC per MON); `getL2Book()` decoded to the same top of book, 9 bid levels and 14 ask levels, and its embedded block number equalled the pinned block, which is a self-check that the read was pinned.
+
+The engine's kuru_book observer uses `bestBidAsk()` for the two prices and `getL2Book()` for depth, both at the pinned block, one request each, never batched.

@@ -2,6 +2,7 @@ packages:
   - engine
   - worker
   - shadow
+  - examples/jev-trader-gated
 # wrangler's native toolchain: install scripts only place platform binaries.
 allowBuilds:
   esbuild: true

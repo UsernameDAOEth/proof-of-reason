@@ -10,3 +10,6 @@
 [submodule "contracts/lib/metamorpho-v1.1"]
 	path = contracts/lib/metamorpho-v1.1
 	url = https://github.com/morpho-org/metamorpho-v1.1
+[submodule "examples/jev-trader-gated/upstream"]
+	path = examples/jev-trader-gated/upstream
+	url = https://github.com/jarrodwatts/jev-trader

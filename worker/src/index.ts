@@ -5,6 +5,7 @@ import type { Address, Hex, LocalAccount } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import { monad } from 'viem/chains'
 import { viemMorphoReader } from 'proof-of-reason-engine/morpho'
+import { viemKuruReader } from 'proof-of-reason-engine/kuru'
 import { createApp } from './app.ts'
 import type { ReceiptStore } from './app.ts'
 import { HttpError } from './check.ts'
@@ -58,6 +59,7 @@ export function buildApp(env: Env, facilitator?: FacilitatorClient) {
   // Multicall. The observers issue those reads one at a time (docs/MONAD.md, RPC policy).
   const client = createPublicClient({ chain: monad, transport: http(env.MONAD_RPC_URL, { batch: false }) })
   const reader = viemMorphoReader(client, MORPHO)
+  const kuru = viemKuruReader(client)
   let chainChecked = false
   const getBlockNumber = async () => {
     if (!chainChecked) {
@@ -73,7 +75,7 @@ export function buildApp(env: Env, facilitator?: FacilitatorClient) {
     payTo,
     receipts: env.RECEIPTS,
     mandates: MANDATES,
-    checkDeps: () => ({ reader, getBlockNumber, account: validatorAccount(env), chainId: CHAIN_ID, gate, vault }),
+    checkDeps: () => ({ reader, kuru, getBlockNumber, account: validatorAccount(env), chainId: CHAIN_ID, gate, vault }),
   })
 }
 

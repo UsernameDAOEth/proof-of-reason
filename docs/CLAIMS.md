@@ -85,6 +85,18 @@ The allocation the agent says it is making. The engine decodes the vault calldat
 | market | string matching `^0x[0-9a-fA-F]{64}$` | yes | Morpho Blue market id encoded in the adapter data |
 | assets | string matching `^(0\|[1-9][0-9]*)$` | yes | loan-token atomic units |
 
+### fn kuru_order
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| fn | `"kuru_order"` | yes | Kuru OrderBook batchUpdate: one post-only order per block |
+| venue | string matching `^0x[0-9a-fA-F]{40}$` | yes | the Kuru OrderBook market the gate forwards to |
+| side | `"buy"` or `"sell"` or `"cancel-only"` | yes |  |
+| price | string matching `^(0\|[1-9][0-9]*)$` | yes | price in pricePrecision units, exactly as in the calldata; 0 for cancel-only |
+| size | string matching `^(0\|[1-9][0-9]*)$` | yes | size in sizePrecision units, exactly as in the calldata; 0 for cancel-only |
+| cancels | integer >= 0, <= 64 | yes | how many order ids the call cancels |
+| postOnly | boolean | yes |  |
+
 ## MandateV0
 
 Set by the principal.
@@ -153,3 +165,64 @@ Used by the shadow runner for read-only audits (docs/SHADOW.md). The validator w
 3. vault_rate is UNVERIFIABLE when the vault has no code at the start block, the start share price is 0, or elapsed <= 0 seconds. The basis must match the observation; APR against APY is a schema error. The tolerance slack of TOLERANCE_SLACK_PP applies.
 4. balance: balanceOf(holder) of the token at the pinned block, in token atomic units. TRUE when |observed - amount| <= toleranceAtomic. UNVERIFIABLE when the token has no code at the pinned block.
 5. Reads for the audit-only kinds follow the same policy: one eth_call per read, sequential, ascending block order, never batched.
+
+## Typed-decision claim kinds
+
+For agents that emit a choice and probabilities instead of a reason (examples/jev-trader-gated). The validator worker accepts these under a typed-decision mandate.
+
+### kind kuru_book
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| id | string | yes | unique within the claim set |
+| sourceSpan | string or null | yes | verbatim text from the reason that this claim encodes; null when the agent sends typed claims |
+| kind | `"kuru_book"` | yes |  |
+| market | string matching `^0x[0-9a-fA-F]{40}$` | yes | Kuru OrderBook market the model read |
+| bestBid | number | yes | claimed best bid, quote per base |
+| bestAsk | number | yes | claimed best ask, quote per base |
+| tolerancePp | number >= 0 | yes | allowed relative difference in percent: \|observed - claimed\| / claimed * 100 |
+
+### kind decision
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| id | string | yes | unique within the claim set |
+| sourceSpan | string or null | yes | verbatim text from the reason that this claim encodes; null when the agent sends typed claims |
+| kind | `"decision"` | yes |  |
+| answer | string | yes | the answer the model returned, verbatim |
+| allowedValues | array of string, at least 1 | yes | every answer the principal accepts; an answer outside this set is never defaulted |
+| probability | number >= 0, <= 1 | yes | the probability the model gave its answer |
+| minProbability | number >= 0, <= 1 | yes | the lowest probability the principal accepts |
+
+### kind position
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| id | string | yes | unique within the claim set |
+| sourceSpan | string or null | yes | verbatim text from the reason that this claim encodes; null when the agent sends typed claims |
+| kind | `"position"` | yes |  |
+| gate | string matching `^0x[0-9a-fA-F]{40}$` | yes | the gate whose balances are the position |
+| market | string matching `^0x[0-9a-fA-F]{40}$` | yes | Kuru OrderBook market used to price the base balance |
+| maxNotionalUsd | number | yes | cap on base balance times best bid, in quote units |
+| maxPositionBase | number | yes | cap on the base balance, in whole base units |
+
+### Typed-decision mandate
+
+| Field | Type | Required | Meaning |
+| --- | --- | --- | --- |
+| type | `"typed-decision"` | yes |  |
+| gate | string matching `^0x[0-9a-fA-F]{40}$` | yes | the KuruGate that holds the trading balance |
+| market | string matching `^0x[0-9a-fA-F]{40}$` | yes | the only Kuru market this mandate covers |
+| allowedAnswers | array of string, at least 1 | yes | every answer the principal accepts |
+| minProbability | number >= 0, <= 1 | yes | the lowest probability the principal accepts |
+| maxNotionalUsd | number | yes | cap on the position value in quote units |
+| maxPositionBase | number | yes | cap on the base balance in whole base units |
+| requiredKinds | array of `"kuru_book"` or `"decision"` or `"position"` | yes | claim kinds that must be present for a PASS |
+
+### Typed-decision conventions
+
+1. Scope: kuru_book, decision, and position describe a typed-decision agent, one that emits a choice and probabilities and never a reason. The reason on record is the state the model was shown plus the answer it gave.
+2. kuru_book: bestBid and bestAsk come from the Kuru OrderBook at the pinned block (bestBidAsk(), 1e18-scaled, plus getL2Book() for depth). Both sides must hold: TRUE when |observed - claimed| / claimed * 100 <= tolerancePp for the bid and the ask.
+3. decision: TRUE when the answer is in allowedValues and probability >= minProbability. An answer outside allowedValues is UNVERIFIABLE, which gives WAIT, and is never mapped to a default side. A recognised answer below minProbability is FALSE, which gives FAIL.
+4. position: the gate is the position. positionBase is the gate base balance at the pinned block in whole base units, and notionalUsd is positionBase times the best bid. TRUE when positionBase <= maxPositionBase and notionalUsd <= maxNotionalUsd; a breach is FALSE, which gives FAIL, and the failing item carries the observed numbers.
+5. A typed-decision mandate fixes the gate, the market, the allowed answers, the minimum probability, and both caps. A claim that widens any of them is a mandate violation, which gives FAIL: the agent cannot grant itself a looser limit.
