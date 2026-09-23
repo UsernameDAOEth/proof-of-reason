@@ -1,50 +1,32 @@
-# envio indexer: the validation record
+# envio: the verdict index
 
-Indexes the interim ERC-8004 Validation Registry (`contracts/src/ValidationRegistry.sol`,
-`docs/MONAD.md` section 12) on Monad, so every verdict the validator recorded is queryable: what it
-was, which agent it was filed against, whether the agent asked for it, and which receipt it seals.
+Indexes the gates and the interim ERC-8004 Validation Registry on Monad, and serves one page per
+gated agent from `worker/`.
 
-## Placeholders to fill in
-
-| Where | What | Source |
-| --- | --- | --- |
-| `config.yaml` `address` | the registry address | `REGISTRY` from runbook step 6a |
-| `config.yaml` `start_block` | the block it was deployed in | the DeployRegistry transaction |
-
-Nothing else is a placeholder. The ABI in `abis/ValidationRegistry.json` is generated from the
-contract, not hand written:
-
-```sh
-cd ../contracts
-forge inspect src/ValidationRegistry.sol:ValidationRegistry abi --json > ../envio/abis/ValidationRegistry.json
-```
-
-## Run it
+**Full documentation, including the counting rule, the bound, the data source, local run and the
+Envio Cloud deploy: [docs/ENVIO.md](../docs/ENVIO.md).**
 
 ```sh
 pnpm install
-pnpm envio codegen   # writes the `generated` module the handlers import
-pnpm envio dev
+pnpm test                                     # pure tests: no codegen, no database, no network
+ENVIO_RPC_URL=https://rpc.monad.xyz pnpm codegen
+pnpm dev                                      # needs Docker
+cd worker && pnpm test                        # the agent page
 ```
 
-`envio codegen` is what makes `src/EventHandlers.ts` typecheck: the `generated` module is not in the
-repository. This package is deliberately outside the pnpm workspace, so the repo's `pnpm -r test`
-and `pnpm -r typecheck` never depend on codegen having been run.
+| Path | What it is |
+| --- | --- |
+| `config.yaml` | networks, contracts, and the data source by environment. Addresses are placeholders. |
+| `schema.graphql` | `Gate`, `Verdict`, `Agent`, `RegistryAgent`, `RegistryVerdict`. |
+| `abis/` | generated with `forge inspect`, never hand written. |
+| `src/outcomes.ts` | the only place 100, 50 and 0 become PASS, WAIT and FAIL. |
+| `src/wilson.ts` | the Wilson lower bound, pure. Under 10 samples, `INSUFFICIENT_HISTORY`. |
+| `src/verdicts.ts` | the counting rule, pure. |
+| `src/datasource.ts` | HyperSync or RPC, decided by `ENVIO_RPC_URL` and `ENVIO_RPC_FOR`. |
+| `src/handlers.ts` | the handler bodies, pure, over a get/set context. |
+| `src/EventHandlers.ts` | registration only. The one file that needs `pnpm codegen`. |
+| `worker/` | `GET /agents/:address`, server rendered, no JavaScript, weekly cron. |
+| `generated/` | codegen output. Gitignored, never committed. |
 
-## The mapping
-
-`src/outcomes.ts` is the only place the ERC's 0 to 100 scale becomes a Proof of Reason outcome: 100
-is PASS, 50 is WAIT, 0 is FAIL, and anything else is `OTHER` with no outcome code. The registry
-accepts any value in 0 to 100, so a response no ruleset of ours emits is reported as itself rather
-than rounded into a verdict.
-
-## Entities
-
-- `ValidationRecord`, one per request hash, which for Proof of Reason is the EIP-712 intent hash. It
-  carries the response, the outcome, the receipt hash, the tag, how many times it has been answered,
-  and `requested`: false for a response the agent never asked for.
-- `Agent`, running totals per agent id: how many verdicts, split PASS, WAIT, FAIL, OTHER, and how
-  many were volunteered rather than requested.
-
-A repeat response for the same request hash replaces the verdict on that record and does not add a
-new one to the agent's totals, which mirrors the registry: the latest response wins.
+`pnpm typecheck` leaves `src/EventHandlers.ts` out because it imports the codegen output;
+`pnpm typecheck:handlers` checks it once `pnpm codegen` has run.

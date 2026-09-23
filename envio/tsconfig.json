@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["es2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["src", "test"],
+  "//": "src/EventHandlers.ts imports the codegen output, which is not in the repository. It is checked by tsconfig.handlers.json after `pnpm codegen` (docs/ENVIO.md).",
+  "exclude": ["src/EventHandlers.ts", "generated", "worker", "node_modules"]
+}

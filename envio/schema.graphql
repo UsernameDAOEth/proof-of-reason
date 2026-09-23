@@ -1,31 +1,75 @@
-"One request hash: the verdict a validator recorded for an agent, and whether the agent asked."
-type ValidationRecord {
-  "The request hash, which for Proof of Reason is the EIP-712 intent hash."
+"A gate, and what it executed. Gate events are authoritative for pass, wait and override."
+type Gate {
+  "The gate address, lowercase."
   id: ID!
-  agentId: BigInt!
-  validator: String!
-  "0 to 100 as the ERC records it."
-  response: Int
-  "PASS, WAIT, FAIL, or OTHER for a response no ruleset of ours emits."
-  outcome: String
-  "1, 2, 3 as ReasonGate encodes the outcome, or null when the response maps to OTHER."
-  outcomeCode: Int
-  "The receipt hash: the sealed receipt at GET /receipts/<id>."
-  responseHash: String
-  "The ruleset version the validator tagged the response with."
-  tag: String
-  "False for a response the agent never requested (the interim addition)."
-  requested: Boolean!
-  "How many times this request hash has been answered."
-  responses: Int!
-  requestUri: String
+  "ReasonGate or KuruGate."
+  kind: String!
+  validator: String
+  "The one address allowed to call execute."
+  agentKey: String
+  executions: Int!
+  passes: Int!
+  waits: Int!
+  overrides: Int!
+  "The ERC-8004 agent id this gate's verdicts are filed under, learned from the intent hash a gate event and a registry response share."
+  registryAgentId: BigInt
   firstBlock: BigInt!
   lastBlock: BigInt!
-  lastTx: String
 }
 
-"Running totals per ERC-8004 agent id."
+"One intent hash: the verdict, joined from whichever of the two sources saw it."
+type Verdict {
+  "The EIP-712 intent hash."
+  id: ID!
+  "PASS, WAIT, FAIL, or null for a registry response no ruleset of ours emits."
+  outcome: String
+  "1, 2, 3 as ReasonGate encodes the outcome, null when outcome is null."
+  outcomeCode: Int
+  "gate, registry, or both."
+  source: String!
+  gate: String
+  "True when a WAIT was executed on the owner's signature."
+  ownerOverride: Boolean
+  "The sealed receipt: GET /receipts/<id> on the validator."
+  receiptHash: String
+  "False for a verdict the agent never asked the registry to record."
+  requested: Boolean
+  registryAgentId: BigInt
+  tag: String
+  executedBlock: BigInt
+  recordedBlock: BigInt
+  lastTx: String
+  firstBlock: BigInt!
+  lastBlock: BigInt!
+}
+
+"The agent as principals see it, keyed by gate address: what executed, what was refused, and the Wilson lower bound on its pass rate."
 type Agent {
+  "The gate address, lowercase. This is the :address in GET /agents/:address."
+  id: ID!
+  kind: String
+  validator: String
+  registryAgentId: BigInt
+  passes: Int!
+  "Waits that executed on an owner override; a wait the owner left alone never reaches a gate."
+  waits: Int!
+  overrides: Int!
+  "Refusals, which only the registry sees: a FAIL reverts, so no gate event exists."
+  fails: Int!
+  "Registry responses outside 100, 50, 0. Counted, never scored."
+  others: Int!
+  "passes + waits + fails. others is excluded."
+  samples: Int!
+  "Wilson lower bound at z 1.96, or null under 10 samples."
+  wilsonLowerBound: Float
+  "OK or INSUFFICIENT_HISTORY."
+  boundStatus: String!
+  lastOutcome: String
+  lastBlock: BigInt!
+}
+
+"Running totals per ERC-8004 agent id, from the registry alone. The audit view."
+type RegistryAgent {
   "The agent id, decimal."
   id: ID!
   recorded: Int!
@@ -35,6 +79,31 @@ type Agent {
   others: Int!
   "Responses the agent never asked for."
   volunteered: Int!
+  gate: String
   lastOutcome: String
   lastBlock: BigInt!
+}
+
+"One registry response, kept whole for audit even where the gate is authoritative for the count."
+type RegistryVerdict {
+  "The request hash, which for Proof of Reason is the intent hash."
+  id: ID!
+  registryAgentId: BigInt!
+  validator: String!
+  "0 to 100 as the ERC records it."
+  response: Int!
+  "PASS, WAIT, FAIL, or null for anything else."
+  outcome: String
+  outcomeCode: Int
+  "The receipt hash the response seals."
+  responseHash: String!
+  tag: String!
+  "False for a response the agent never requested."
+  requested: Boolean!
+  "How many times this request hash has been answered; the latest wins."
+  responses: Int!
+  requestUri: String
+  firstBlock: BigInt!
+  lastBlock: BigInt!
+  lastTx: String!
 }

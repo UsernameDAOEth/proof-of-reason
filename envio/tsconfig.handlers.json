@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "//": "Run after `pnpm codegen`. The paths mapping resolves the codegen output without installing it, so nothing in package.json depends on a gitignored directory. The codegen output is CommonJS ReScript output, so verbatimModuleSyntax and erasableSyntaxOnly are off here; src/ itself is checked under both by tsconfig.json.",
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "generated",
+    "worker",
+    "node_modules"
+  ],
+  "compilerOptions": {
+    "paths": {
+      "generated": [
+        "./generated/index.d.ts"
+      ]
+    },
+    "verbatimModuleSyntax": false,
+    "erasableSyntaxOnly": false
+  }
+}

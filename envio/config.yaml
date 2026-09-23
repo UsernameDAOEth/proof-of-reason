@@ -1,25 +1,51 @@
-# Envio indexer for the Proof of Reason validation record on Monad.
+# Envio indexer for the Proof of Reason verdict record on Monad.
 #
-# The ValidationResponse handler reads the interim ERC-8004 Validation Registry
-# (contracts/src/ValidationRegistry.sol, docs/MONAD.md section 12) through the ABI in
-# abis/ValidationRegistry.json, which is generated from that contract with
-# `forge inspect src/ValidationRegistry.sol:ValidationRegistry abi --json`.
+# Two sources of truth, joined on the EIP-712 intent hash:
+#   the gates            what actually executed: PASS, and WAIT when the owner overrode it
+#   the ValidationRegistry  what the validator said, including the FAILs that never reach a gate
+# docs/ENVIO.md explains the counting rule and why it is split that way.
 #
-# Addresses and start_block are placeholders: fill them in from the DeployRegistry log in
-# docs/DEPLOY_RUNBOOK.md step 6, then `pnpm envio codegen && pnpm envio dev`.
+# Data source by environment (docs/ENVIO.md, "Data source"):
+#   ENVIO_RPC_URL unset          HyperSync, the default, no RPC needed
+#   ENVIO_RPC_URL set            that RPC, as a fallback behind HyperSync
+#   ENVIO_RPC_FOR=sync           that RPC as the only source, no HyperSync
+# envio/src/datasource.ts is the same rule in code, and its tests pin this file's two placeholders.
 name: proof-of-reason
 unordered_multichain_mode: false
+contracts:
+  - name: ValidationRegistry
+    abi_file_path: ./abis/ValidationRegistry.json
+    handler: src/EventHandlers.ts
+    events:
+      - event: ValidationRequest(address indexed validator, uint256 indexed agentId, bytes32 indexed requestHash, string requestUri)
+      - event: ValidationResponse(address indexed validator, uint256 indexed agentId, bytes32 indexed requestHash, uint8 response, bytes32 responseHash, string tag, bool requested)
+  - name: ReasonGate
+    abi_file_path: ./abis/ReasonGate.json
+    handler: src/EventHandlers.ts
+    events:
+      - event: Executed(bytes32 indexed intentHash, uint8 outcome, bytes32 receiptHash, bool ownerOverride)
+      - event: ValidatorSet(address indexed previousValidator, address indexed newValidator)
+      - event: AgentSet(address indexed previousAgent, address indexed newAgent)
+  - name: KuruGate
+    abi_file_path: ./abis/KuruGate.json
+    handler: src/EventHandlers.ts
+    events:
+      - event: Executed(bytes32 indexed intentHash, uint8 outcome, bytes32 receiptHash, bool ownerOverride)
+      - event: ValidatorSet(address indexed previousValidator, address indexed newValidator)
+      - event: AgentSet(address indexed previousAgent, address indexed newAgent)
 networks:
   - id: 143
-    # Placeholder: the block DeployRegistry was mined in.
+    # Placeholder: the block the first gate was deployed in (runbook step 5).
     start_block: 0
+    rpc:
+      url: ${ENVIO_RPC_URL}
+      for: ${ENVIO_RPC_FOR:-fallback}
     contracts:
+      # Placeholder addresses: REGISTRY and GATE from docs/DEPLOY_RUNBOOK.md steps 5 and 6a, and the
+      # KuruGate from examples/jev-trader-gated once it is deployed.
       - name: ValidationRegistry
-        address:
-          # Placeholder: REGISTRY from docs/DEPLOY_RUNBOOK.md step 6a.
-          - 0x0000000000000000000000000000000000000000
-        abi_file_path: ./abis/ValidationRegistry.json
-        handler: src/EventHandlers.ts
-        events:
-          - event: ValidationRequest(address indexed validator, uint256 indexed agentId, bytes32 indexed requestHash, string requestUri)
-          - event: ValidationResponse(address indexed validator, uint256 indexed agentId, bytes32 indexed requestHash, uint8 response, bytes32 responseHash, string tag, bool requested)
+        address: "0x0000000000000000000000000000000000000000"
+      - name: ReasonGate
+        address: "0x0000000000000000000000000000000000000000"
+      - name: KuruGate
+        address: "0x0000000000000000000000000000000000000000"

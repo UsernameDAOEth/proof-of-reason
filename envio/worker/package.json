@@ -1,0 +1,16 @@
+{
+  "name": "proof-of-reason-agent-page",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250801.0",
+    "@types/node": "^26.6.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
+  }
+}

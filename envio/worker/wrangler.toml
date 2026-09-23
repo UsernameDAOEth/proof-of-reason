@@ -1,0 +1,22 @@
+# The agent page: server-rendered HTML, no JavaScript in the response.
+# Deployed by DJ; see docs/ENVIO.md. Public configuration only, no secrets.
+name = "proof-of-reason-agent-page"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+workers_dev = false
+routes = [
+  { pattern = "agents.proofofreason.com", custom_domain = true },
+]
+
+# Once a week, Monday 12:00 UTC: one request to the page, which is what keeps an Envio Cloud
+# Development deployment from being deleted for 7 days of inactivity (docs/ENVIO.md).
+[triggers]
+crons = ["0 12 * * 1"]
+
+[vars]
+# Filled in after `envio deploy`: the indexer's GraphQL endpoint.
+ENVIO_GRAPHQL_URL = ""
+RECEIPTS_BASE = "https://api.proofofreason.com/receipts"
+PAGE_ORIGIN = "https://agents.proofofreason.com"
+# The gate the weekly request asks for, so the request hits the indexer and not just the edge.
+CRON_AGENT_ADDRESS = ""

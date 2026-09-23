@@ -3,7 +3,11 @@ packages:
   - worker
   - shadow
   - examples/jev-trader-gated
+  - envio
+  - envio/worker
 # wrangler's native toolchain: install scripts only place platform binaries.
 allowBuilds:
   esbuild: true
+  # envio's codegen compiler, used only inside envio/.
+  rescript: true
   workerd: true
