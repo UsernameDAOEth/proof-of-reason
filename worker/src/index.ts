@@ -11,6 +11,7 @@ import type { ReceiptStore } from './app.ts'
 import { HttpError } from './check.ts'
 import { CHAIN_ID, FACILITATOR_URL, MORPHO } from './config.ts'
 import { MANDATES } from './mandates.ts'
+import { viemRegistryWriter } from './registry.ts'
 
 /**
  * Worker bindings. VALIDATOR_KEY and MONAD_RPC_URL are Cloudflare secrets: the archive RPC URL
@@ -23,6 +24,8 @@ export interface Env {
   GATE_ADDRESS: string
   VAULT_ADDRESS: string
   PAY_TO: string
+  /** Interim ERC-8004 Validation Registry. Empty until it is deployed: verdicts are then unrecorded. */
+  REGISTRY_ADDRESS?: string
 }
 
 export class ConfigError extends Error {
@@ -58,6 +61,12 @@ export function buildApp(env: Env, facilitator?: FacilitatorClient) {
   // One JSON-RPC request per read: no JSON-RPC batch (the Foundation RPC forbids it) and no
   // Multicall. The observers issue those reads one at a time (docs/MONAD.md, RPC policy).
   const client = createPublicClient({ chain: monad, transport: http(env.MONAD_RPC_URL, { batch: false }) })
+  // The registry write is signed by the same VALIDATOR_KEY that signs the verdict, through the same
+  // RPC. Without REGISTRY_ADDRESS nothing is written and every receipt records that.
+  const registryAddress =
+    typeof env.REGISTRY_ADDRESS === 'string' && isAddress(env.REGISTRY_ADDRESS, { strict: false })
+      ? (env.REGISTRY_ADDRESS as Address)
+      : undefined
   const reader = viemMorphoReader(client, MORPHO)
   const kuru = viemKuruReader(client)
   let chainChecked = false
@@ -75,7 +84,22 @@ export function buildApp(env: Env, facilitator?: FacilitatorClient) {
     payTo,
     receipts: env.RECEIPTS,
     mandates: MANDATES,
-    checkDeps: () => ({ reader, kuru, getBlockNumber, account: validatorAccount(env), chainId: CHAIN_ID, gate, vault }),
+    checkDeps: () => {
+      const account = validatorAccount(env)
+      return {
+        reader,
+        kuru,
+        getBlockNumber,
+        account,
+        chainId: CHAIN_ID,
+        gate,
+        vault,
+        registry:
+          registryAddress === undefined
+            ? undefined
+            : viemRegistryWriter({ address: registryAddress, account, rpcUrl: env.MONAD_RPC_URL }),
+      }
+    },
   })
 }
 

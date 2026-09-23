@@ -6,5 +6,6 @@
   "minProbability": 0.6,
   "maxNotionalUsd": 100,
   "maxPositionBase": 1000,
-  "requiredKinds": ["kuru_book", "decision", "position"]
+  "requiredKinds": ["kuru_book", "decision", "position"],
+  "agentId": "0"
 }

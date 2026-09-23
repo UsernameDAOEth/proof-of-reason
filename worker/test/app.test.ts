@@ -6,7 +6,7 @@ import { registerExactEvmScheme } from '@x402/evm/exact/client'
 import { createApp } from '../src/app.ts'
 import { NETWORK, PRICE_ATOMIC, USDC } from '../src/config.ts'
 import { MANDATES } from '../src/mandates.ts'
-import { FakeFacilitator, FakeReader, MemoryStore, PAY_TO, checkBody, checkDeps } from './helpers.ts'
+import { FakeFacilitator, FakeReader, MemoryStore, PAY_TO, checkBody, checkDeps, sealHashOf } from './helpers.ts'
 
 const validator = privateKeyToAccount(generatePrivateKey())
 const payer = privateKeyToAccount(generatePrivateKey())
@@ -90,7 +90,7 @@ describe('POST /check payment', () => {
     expect(body.signed.validator).toBe(validator.address)
 
     const stored = receipts.map.get(body.signed.intentHash)!
-    expect(keccak256(stringToBytes(stored))).toBe(body.signed.receiptHash)
+    expect(sealHashOf(stored)).toBe(body.signed.receiptHash)
 
     const fetched = await app.request(`/receipts/${body.signed.intentHash}`)
     expect(fetched.status).toBe(200)
@@ -147,7 +147,7 @@ describe('POST /check refusals are free', () => {
 })
 
 describe('GET /', () => {
-  it('describes the service exactly as docs/DEPLOY_RUNBOOK.md step 7 expects', async () => {
+  it('describes the service exactly as docs/DEPLOY_RUNBOOK.md step 8 expects', async () => {
     const { app } = setup()
     const res = await app.request('/')
     expect(res.status).toBe(200)

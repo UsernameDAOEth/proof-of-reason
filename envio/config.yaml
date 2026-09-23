@@ -1,0 +1,25 @@
+# Envio indexer for the Proof of Reason validation record on Monad.
+#
+# The ValidationResponse handler reads the interim ERC-8004 Validation Registry
+# (contracts/src/ValidationRegistry.sol, docs/MONAD.md section 12) through the ABI in
+# abis/ValidationRegistry.json, which is generated from that contract with
+# `forge inspect src/ValidationRegistry.sol:ValidationRegistry abi --json`.
+#
+# Addresses and start_block are placeholders: fill them in from the DeployRegistry log in
+# docs/DEPLOY_RUNBOOK.md step 6, then `pnpm envio codegen && pnpm envio dev`.
+name: proof-of-reason
+unordered_multichain_mode: false
+networks:
+  - id: 143
+    # Placeholder: the block DeployRegistry was mined in.
+    start_block: 0
+    contracts:
+      - name: ValidationRegistry
+        address:
+          # Placeholder: REGISTRY from docs/DEPLOY_RUNBOOK.md step 6a.
+          - 0x0000000000000000000000000000000000000000
+        abi_file_path: ./abis/ValidationRegistry.json
+        handler: src/EventHandlers.ts
+        events:
+          - event: ValidationRequest(address indexed validator, uint256 indexed agentId, bytes32 indexed requestHash, string requestUri)
+          - event: ValidationResponse(address indexed validator, uint256 indexed agentId, bytes32 indexed requestHash, uint8 response, bytes32 responseHash, string tag, bool requested)

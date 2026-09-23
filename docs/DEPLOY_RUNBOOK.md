@@ -21,9 +21,14 @@ Monad charges the full gas limit, not the gas used. Every transaction below has 
 | setSupplyQueue | 180,000 | measured exec 123,775 |
 | setIsAllocator | 100,000 | measured exec 60,829 |
 | gate CREATE2 deploy | 2,050,000 | measured exec 1,529,194 plus 124,504 calldata |
-| ERC-8004 register | `cast estimate` x 1.2 | 1,216,176 estimated for a 1,773-character URI on 2026-09-19 |
+| registry CREATE2 deploy | 1,700,000 | DeployRegistry.s.sol: 6,213 bytes of code at 200 gas, plus init code as calldata |
+| ERC-8004 register (demo agent) | `cast estimate` x 1.2 | `register()` with no URI, about 200,000 |
+| ERC-8004 register (validator) | `cast estimate` x 1.2 | 1,216,176 estimated for a 1,773-character URI on 2026-09-19 |
+| validator MON top-up | 21,000 | a plain transfer of 1 MON |
 
-Total is about 9.7M gas. The 2026-09-18 simulation quoted a 100 gwei base fee and a 203 gwei max fee, which puts the cost between about 1.0 and 2.0 MON. Fund the deployer with at least 2.5 MON. The validator key never sends a transaction and needs no MON.
+Total is about 11.6M gas. The 2026-09-18 simulation quoted a 100 gwei base fee and a 203 gwei max fee, which puts the cost between about 1.2 and 2.4 MON. Fund the deployer with at least 3.5 MON, 1 MON of which goes to the validator in step 6.
+
+The validator key now does send transactions: one `validationResponse` per verdict, at an explicit 300,000 gas limit (worker/src/registry.ts). Monad charges the limit, so at a 102 gwei effective price each verdict costs about 0.031 MON, and 1 MON covers about 32 verdicts. When the validator runs out of MON the verdict is still signed and returned: the receipt records `registry.error` instead of `registry.tx` (docs/MONAD.md section 12).
 
 Why `--skip-simulation`: forge's second simulation phase re-estimates every transaction through the RPC. That estimate cannot see the vault created earlier in the same script, so it priced `submitCap` at 25,898 gas, which is intrinsic gas only, and the transaction would run out of gas on chain. With `--skip-simulation`, forge sends the explicit limits verbatim. The local execution phase still runs against live Monad state, with Monad gas rules (`network = "monad"` in foundry.toml).
 
@@ -45,7 +50,7 @@ dig +short api.proofofreason.com
 
 Expected:
 - `chin.ns.cloudflare.com.` and `greg.ns.cloudflare.com.`, in either order.
-- Nothing for `api.proofofreason.com`. The Workers Custom Domain creates that record in step 6. If a record already exists, delete it in the Cloudflare dashboard first, or step 6 fails.
+- Nothing for `api.proofofreason.com`. The Workers Custom Domain creates that record in step 7. If a record already exists, delete it in the Cloudflare dashboard first, or step 7 fails.
 
 In the Cloudflare dashboard for proofofreason.com, confirm: status Active, SSL/TLS encryption mode Full (strict), and Always Use HTTPS On.
 
@@ -76,6 +81,8 @@ VALIDATOR_ADDRESS=
 AGENT_ADDRESS=
 VAULT=
 GATE=
+REGISTRY=
+AGENT_ID=
 EOF
 git check-ignore -v contracts/.env.deploy worker/.env.worker
 ```
@@ -202,7 +209,91 @@ GAS=$(cast estimate $GATE "setMaxAgeBlocks(uint64)" <blocks> --from $DEPLOYER --
 cast send $GATE "setMaxAgeBlocks(uint64)" <blocks> --gas-limit $((GAS * 12 / 10)) --private-key "$PRIVATE_KEY" --rpc-url monad
 ```
 
-## 6. Deploy the worker to api.proofofreason.com
+## 6. Deploy the validation registry and register the demo agent
+
+The worker records every verdict, PASS, WAIT and FAIL alike, on an interim ERC-8004 Validation
+Registry. Why interim, and what migrating to the canonical one costs: docs/MONAD.md section 12.
+
+### 6a. Deploy the registry
+
+```sh
+cd ~/proof-of-reason/contracts
+set -a; . ./.env.deploy; set +a
+forge script script/DeployRegistry.s.sol --rpc-url monad --skip-simulation
+forge script script/DeployRegistry.s.sol --rpc-url monad --broadcast --skip-simulation --slow
+```
+
+Expected: `REGISTRY 0x<registry>`, then REGISTRY_OWNER (the gate owner, or the deployer),
+IDENTITY_REGISTRY `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`, and VALIDATOR. One `[Success]`
+transaction with gas limit 1700000. Put the address in `REGISTRY=` in `.env.deploy`.
+
+Verify:
+
+```sh
+cast call $REGISTRY "identityRegistry()(address)" --rpc-url monad
+cast call $REGISTRY "owner()(address)" --rpc-url monad
+cast call $REGISTRY "MAX_RESPONSE()(uint8)" --rpc-url monad
+```
+
+Expected: `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`, the gate owner, `100`.
+
+### 6b. Register the demo agent on the Identity Registry
+
+The demo agent is its own ERC-8004 agent, separate from the validator registered in step 9: the
+agent is the thing being validated, the validator is the thing doing the validating. It is owned by
+the deployer, and `register()` takes no URI, so nothing is published here.
+
+```sh
+DEPLOYER=$(cast wallet address --private-key "$PRIVATE_KEY")
+GAS=$(cast estimate 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 "register()" --from $DEPLOYER --rpc-url monad)
+cast send 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 "register()" --gas-limit $((GAS * 12 / 10)) --private-key "$PRIVATE_KEY" --rpc-url monad
+```
+
+Read the agent id from the ERC-721 Transfer event, then check who owns it:
+
+```sh
+cast receipt <transactionHash> --rpc-url monad --json | python3 -c 'import json,sys; r=json.load(sys.stdin); t="0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"; print([int(l["topics"][3],16) for l in r["logs"] if l["topics"][0]==t and l["address"].lower()=="0x8004a169fb4a3325136eb29fa0ceb6d2e539a432"])'
+cast call 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 "ownerOf(uint256)(address)" <agentId> --rpc-url monad
+```
+
+Expected: `[<agentId>]` and your deployer address. Put that number in `AGENT_ID=` in `.env.deploy`.
+
+### 6c. Point the deployment at the registry
+
+The gate contract holds no registry pointer: ReasonGate and KuruGate never call the registry, the
+validator does, so there is nothing to set on chain. The registry address is configuration in two
+places, and the agent id in one:
+
+```sh
+cd ~/proof-of-reason
+# worker/wrangler.toml, [vars]
+REGISTRY_ADDRESS = "<registry>"
+# worker/src/mandates.ts, the demo mandate: replace the placeholder agentId "0"
+agentId: '<agentId>',
+# envio/config.yaml, the ValidationRegistry contract address
+address: "<registry>"
+```
+
+The mandate carries the agent id because the mandate is what the verdict cites, so a receipt names
+the agent it was filed against. While the placeholder `"0"` is there, no verdict is written and
+every receipt says `the mandate carries no ERC-8004 agent id yet`. Commit both edits, then deploy
+the worker in step 7; if the worker is already live, redeploy it after this edit.
+
+### 6d. Fund the validator with 1 MON
+
+The validator signs verdicts with VALIDATOR_KEY and now also sends one transaction per verdict from
+the same key, so its address needs gas. It never holds anything else, and it can move nothing: the
+registry only records.
+
+```sh
+cast send $VALIDATOR_ADDRESS --value 1ether --gas-limit 21000 --private-key "$PRIVATE_KEY" --rpc-url monad
+cast balance $VALIDATOR_ADDRESS --rpc-url monad
+```
+
+Expected: `status 1 (success)` and `1000000000000000000`. That is about 32 verdicts at a 300,000 gas
+limit and 102 gwei. Top it up when `cast balance` falls below about 0.1 MON.
+
+## 7. Deploy the worker to api.proofofreason.com
 
 ```sh
 cd ~/proof-of-reason/worker
@@ -248,7 +339,7 @@ Expected:
 
 Until both secrets exist, the worker answers 500 with `worker is not configured: MONAD_RPC_URL` or `validator key is not configured`. The first certificate for the custom domain can take a few minutes.
 
-## 7. Smoke test without paying
+## 8. Smoke test without paying
 
 ```sh
 cd ~/proof-of-reason/contracts
@@ -283,7 +374,7 @@ Expected: `x402Version` 2 and one `accepts` entry with scheme `exact`, network `
 
 A paid check (0.10 USDC through the facilitator) needs an x402 client wallet, which Phase 2A does not include.
 
-## 8. Register on the ERC-8004 Identity Registry
+## 9. Register the validator on the ERC-8004 Identity Registry
 
 The registration file always lists `https://api.proofofreason.com/check` as the x402 endpoint, `https://proofofreason.com` as the web service, `username.dj-z-s.eth` as the only ENS name, and `dj@proofofreason.com` as contact. The script takes no URL.
 
@@ -324,7 +415,7 @@ GAS=$(cast estimate 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 "setAgentURI(uint
 cast send 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 "setAgentURI(uint256,string)" <agentId> "$URI" --gas-limit $((GAS * 12 / 10)) --private-key "$PRIVATE_KEY" --rpc-url monad
 ```
 
-## 9. Close the shell and commit
+## 10. Close the shell and commit
 
 ```sh
 unset PRIVATE_KEY RPC_URL

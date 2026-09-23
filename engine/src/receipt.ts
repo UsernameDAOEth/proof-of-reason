@@ -75,6 +75,31 @@ export type ReceiptInput = {
   modelId: string | null
 }
 
+/**
+ * What the validator wrote to the ERC-8004 Validation Registry for this receipt, or why it could
+ * not. It is recorded after the verdict is signed, because the response it posts is this receipt's
+ * own hash, so it can never be inside that hash: `registry` is the one key receiptHash does not
+ * cover (RECEIPT_UNSEALED_KEYS), and a reader hashes a stored receipt with the same function either
+ * way. Writing it is fail-soft: the verdict stands whatever the registry did.
+ */
+export type ReceiptRegistryRecord = {
+  /** ERC-8004 agent id the response was filed against, decimal. */
+  agentId: string | null
+  /** The interim ValidationRegistry (docs/MONAD.md section 12), or null when none is configured. */
+  address: Address | null
+  /** 100 for PASS, 50 for WAIT, 0 for FAIL. */
+  response: 0 | 50 | 100
+  /** The ruleset version, recorded as the ERC-8004 tag. */
+  tag: string
+  /** The transaction that carries the response, when one was sent. */
+  tx?: Hex
+  /** Why no transaction carries it. One of tx or error is always present. */
+  error?: string
+}
+
+/** The only keys receiptHash does not cover. Everything else is sealed. */
+export const RECEIPT_UNSEALED_KEYS = ['registry'] as const
+
 export type Receipt = {
   ruleset: typeof RULESET
   engineVersion: string
@@ -96,6 +121,8 @@ export type Receipt = {
   action: ActionV0
   mandate: Mandate
   observations: AnyObservation[]
+  /** Added after the verdict is signed, and never part of receiptHash. */
+  registry?: ReceiptRegistryRecord
   results: ClaimResult[]
   verdict: {
     outcome: Verdict['outcome']
@@ -149,6 +176,18 @@ export function buildReceipt(input: ReceiptInput): Receipt {
   }
 }
 
+/** The receipt as it is sealed: every key except the ones written after the signature. */
+export function sealedReceipt(receipt: Receipt): Omit<Receipt, 'registry'> {
+  const { registry, ...sealed } = receipt
+  void registry
+  return sealed
+}
+
+/**
+ * The hash the validator signs and the gate is given. It covers the whole receipt except
+ * RECEIPT_UNSEALED_KEYS, so hashing a stored receipt gives the same value before and after the
+ * registry write is recorded.
+ */
 export function receiptHash(receipt: Receipt): Hex {
-  return hashCanonical(receipt)
+  return hashCanonical(sealedReceipt(receipt))
 }

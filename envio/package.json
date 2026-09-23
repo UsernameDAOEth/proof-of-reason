@@ -1,0 +1,13 @@
+{
+  "name": "proof-of-reason-envio",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "codegen": "envio codegen",
+    "dev": "envio dev",
+    "start": "envio start"
+  },
+  "dependencies": {
+    "envio": "^2.30.0"
+  }
+}

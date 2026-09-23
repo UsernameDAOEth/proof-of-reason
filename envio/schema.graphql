@@ -1,0 +1,40 @@
+"One request hash: the verdict a validator recorded for an agent, and whether the agent asked."
+type ValidationRecord {
+  "The request hash, which for Proof of Reason is the EIP-712 intent hash."
+  id: ID!
+  agentId: BigInt!
+  validator: String!
+  "0 to 100 as the ERC records it."
+  response: Int
+  "PASS, WAIT, FAIL, or OTHER for a response no ruleset of ours emits."
+  outcome: String
+  "1, 2, 3 as ReasonGate encodes the outcome, or null when the response maps to OTHER."
+  outcomeCode: Int
+  "The receipt hash: the sealed receipt at GET /receipts/<id>."
+  responseHash: String
+  "The ruleset version the validator tagged the response with."
+  tag: String
+  "False for a response the agent never requested (the interim addition)."
+  requested: Boolean!
+  "How many times this request hash has been answered."
+  responses: Int!
+  requestUri: String
+  firstBlock: BigInt!
+  lastBlock: BigInt!
+  lastTx: String
+}
+
+"Running totals per ERC-8004 agent id."
+type Agent {
+  "The agent id, decimal."
+  id: ID!
+  recorded: Int!
+  passes: Int!
+  waits: Int!
+  fails: Int!
+  others: Int!
+  "Responses the agent never asked for."
+  volunteered: Int!
+  lastOutcome: String
+  lastBlock: BigInt!
+}

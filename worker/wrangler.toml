@@ -19,6 +19,8 @@ routes = [
 GATE_ADDRESS = ""
 VAULT_ADDRESS = ""
 PAY_TO = ""
+# Interim ERC-8004 Validation Registry, from the DeployRegistry log in runbook step 6.
+REGISTRY_ADDRESS = ""
 
 [[kv_namespaces]]
 binding = "RECEIPTS"

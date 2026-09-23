@@ -173,10 +173,21 @@ export const ActionV0 = z.discriminatedUnion('fn', [
   }),
 ])
 
+/**
+ * The ERC-8004 agent id the validator records verdicts against, as a decimal string (agent ids are
+ * uint256 token ids on the Identity Registry). Optional: without it nothing is written on chain and
+ * the receipt says so.
+ */
+export const AgentId = z
+  .string()
+  .regex(/^(0|[1-9][0-9]*)$/, 'decimal uint256')
+  .describe('ERC-8004 agent id on the Identity Registry, decimal')
+
 /** The principal's mandate. */
 export const MandateV0 = z.strictObject({
   allowedMarkets: z.array(Bytes32).describe('every market the calldata touches must be listed'),
   requiredKinds: z.array(ClaimKind).describe('claim kinds that must be present for a PASS'),
+  agentId: AgentId.optional(),
 })
 
 export type ClaimV0 = z.infer<typeof ClaimV0>
@@ -269,6 +280,7 @@ export const TypedDecisionMandate = z.strictObject({
   maxNotionalUsd: z.number().positive().describe('cap on the position value in quote units'),
   maxPositionBase: z.number().positive().describe('cap on the base balance in whole base units'),
   requiredKinds: z.array(z.enum(TYPED_DECISION_KINDS)).describe('claim kinds that must be present for a PASS'),
+  agentId: AgentId.optional(),
 })
 
 /** Either mandate shape. A mandate without a type is the Morpho mandate. */

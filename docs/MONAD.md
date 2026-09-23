@@ -221,3 +221,88 @@ Two reads, both `view` on the market, both pinned with `eth_call` at a block:
 Verified at block 106617487 through rpc.monad.xyz: `bestBidAsk()` gave 25188000000000000 and 25199000000000000 (0.025188 and 0.025199 USDC per MON); `getL2Book()` decoded to the same top of book, 9 bid levels and 14 ask levels, and its embedded block number equalled the pinned block, which is a self-check that the read was pinned.
 
 The engine's kuru_book observer uses `bestBidAsk()` for the two prices and `getL2Book()` for depth, both at the pinned block, one request each, never batched.
+
+## 12. The on-chain verdict record (Phase 2C-d)
+
+### Why an interim registry exists
+
+ERC-8004 has three registries: Identity, Reputation, Validation. Only the Identity one is resolved
+on Monad mainnet, at 0x8004A169FB4a3325136EB29fA0ceB6D2e539a432 (section 5: an ERC-721 called
+"AgentIdentity", implementation getVersion 2.0.0). No canonical Validation Registry address for
+Monad could be resolved from source in this phase, and this session does not fetch web pages, so
+rather than write verdicts to an address that might be wrong, Proof of Reason deploys its own:
+contracts/src/ValidationRegistry.sol, deployed by contracts/script/DeployRegistry.s.sol.
+
+It is interim in the precise sense that it holds records and nothing else. It has no upgrade path, no
+owner power over any record, and no privileged reader. Agent ids are not its own invention: every
+record names an id the Identity Registry knows, because the registry calls `ownerOf(agentId)` and
+lets the call revert when the agent does not exist. That is what makes the records portable: they are
+about ERC-8004 agents, not about rows in a private table.
+
+Conformant surface, as close to the ERC as could be resolved offline:
+- `validationRequest(validator, agentId, requestUri, requestHash)`, callable only by the agent's
+  owner or an operator per the Identity Registry (ERC-721 `ownerOf`, `getApproved`,
+  `isApprovedForAll`),
+- `validationResponse(requestHash, response, responseUri, responseHash, tag)`, callable only by the
+  validator the request named, `response` 0 to 100, callable again for the same request so the latest
+  response wins,
+- `getValidationStatus(requestHash)` and `getSummary(agentId, validators, tag)`, plus
+  `getAgentValidations` and `getValidatorRequests`.
+
+Unverified, and the reason this registry is interim rather than final: the exact argument order and
+names of the canonical ERC-8004 Validation Registry functions, and whether the canonical
+`ValidationResponse` event carries a response hash at all. Those were not resolvable from source in
+this session.
+
+### The one addition: a response with no request
+
+`validationResponse(agentId, requestHash, response, responseHash, tag)` records a response with no
+prior request. It exists because of the shape of this product: a Proof of Reason agent asks the
+validator before it acts, and a WAIT or a FAIL is exactly the case where it then has no reason to
+file anything on chain. Those are the records that matter most, so the validator files them itself.
+
+Such a record is flagged, never disguised: `wasRequested(requestHash)` is false and the
+`ValidationResponse` event carries `requested` false, so any reader can tell a volunteered record
+from a requested one. The agent may later file its request over the top, which flips the flag and
+leaves the verdict untouched; a request naming a different agent or a different validator reverts.
+The conformant overload still refuses to answer a request that does not exist.
+
+### What the worker writes
+
+After every verdict, PASS, WAIT and FAIL alike, the worker sends one `validationResponse` from
+VALIDATOR_KEY through MONAD_RPC_URL:
+
+| Field | Value |
+| --- | --- |
+| agentId | from the mandate the verdict cites, decimal; "0" is the placeholder and nothing is sent |
+| requestHash | the EIP-712 intent hash |
+| response | 100 for PASS, 50 for WAIT, 0 for FAIL |
+| responseHash | the receipt hash, so the record points at GET /receipts/<intentHash> |
+| tag | the ruleset version, REASON-R0 |
+
+Explicit gas limit 300,000 (worker/src/registry.ts), because Monad charges the limit. The write is
+fail-soft: the verdict is signed, returned and stored whatever the registry did, and the receipt
+records either `registry.tx` or `registry.error`. The error line is short and stripped of URLs,
+because the RPC URL is a secret that carries an access token and viem puts the URL it called into its
+error messages.
+
+One consequence worth stating plainly: the response the validator posts is the receipt's own hash, so
+the transaction hash can never be inside that hash. `registry` is therefore the one key that
+receiptHash does not cover (engine/src/receipt.ts, RECEIPT_UNSEALED_KEYS). A verifier hashes a fetched
+receipt by dropping `registry`, canonicalising and hashing, which is what `receiptHash` does; the
+signed verdict is identical whether the write succeeded, failed, or never happened.
+
+### Migrating to the canonical registry
+
+The migration is a redeploy and a config change, not a data model change:
+
+1. Resolve the canonical Validation Registry address and its exact function signatures from the ERC.
+2. If its response call matches this one, point `REGISTRY_ADDRESS` at it and redeploy the worker. If
+   it does not, change worker/src/registry.ts, which is the only file that encodes the call.
+3. The agent asks the canonical registry for a validation with `validationRequest`, so the no-request
+   addition is no longer needed; the worker keeps writing the same five values.
+4. Hand this registry's ownership over with `Ownable2Step` and stop writing to it. Its records stay
+   readable forever: they are keyed by intent hash and sealed by receipt hash, both of which are
+   reproducible from the receipts the worker serves, so nothing has to be migrated to be believed.
+5. envio/config.yaml gets the new address and start block. envio/src/outcomes.ts does not change:
+   100, 50 and 0 are ERC-8004's scale, not ours.

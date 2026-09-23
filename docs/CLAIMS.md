@@ -105,6 +105,7 @@ Set by the principal.
 | --- | --- | --- | --- |
 | allowedMarkets | array of string matching `^0x[0-9a-fA-F]{64}$` | yes | every market the calldata touches must be listed |
 | requiredKinds | array of `"rate"` or `"utilization"` or `"liquidity"` or `"identity"` | yes | claim kinds that must be present for a PASS |
+| agentId | string matching `^(0\|[1-9][0-9]*)$` | no | ERC-8004 agent id on the Identity Registry, decimal |
 
 ## Conventions
 
@@ -218,6 +219,7 @@ For agents that emit a choice and probabilities instead of a reason (examples/je
 | maxNotionalUsd | number | yes | cap on the position value in quote units |
 | maxPositionBase | number | yes | cap on the base balance in whole base units |
 | requiredKinds | array of `"kuru_book"` or `"decision"` or `"position"` | yes | claim kinds that must be present for a PASS |
+| agentId | string matching `^(0\|[1-9][0-9]*)$` | no | ERC-8004 agent id on the Identity Registry, decimal |
 
 ### Typed-decision conventions
 

@@ -8,14 +8,16 @@ import { observeAll } from 'proof-of-reason-engine/morpho'
 import type { MorphoReader } from 'proof-of-reason-engine/morpho'
 import { observeTypedDecisionAll } from 'proof-of-reason-engine/kuru'
 import type { KuruReader } from 'proof-of-reason-engine/kuru'
-import { buildReceipt, canonicalJson, receiptHash } from 'proof-of-reason-engine/receipt'
-import type { Receipt } from 'proof-of-reason-engine/receipt'
+import { RULESET, buildReceipt, canonicalJson, receiptHash } from 'proof-of-reason-engine/receipt'
+import type { Receipt, ReceiptRegistryRecord } from 'proof-of-reason-engine/receipt'
 import { gateDomain, signVerdict } from 'proof-of-reason-engine/sign'
 import type { GateDomain } from 'proof-of-reason-engine/sign'
 import { OUTCOME_CODE, decide } from 'proof-of-reason-engine/verdict'
 import type { Verdict } from 'proof-of-reason-engine/verdict'
 import type { CheckRequestV0 } from './body.ts'
 import { CHECK_LAG_BLOCKS } from './config.ts'
+import { OUTCOME_RESPONSE, describeRegistryError } from './registry.ts'
+import type { RegistryWriter } from './registry.ts'
 
 export class HttpError extends Error {
   readonly status: 400 | 404 | 422 | 500 | 503
@@ -37,6 +39,8 @@ export type CheckDeps = {
   chainId: number
   gate: Address
   vault: Address
+  /** Absent when no validation registry is configured: the receipt then says so. */
+  registry?: RegistryWriter
 }
 
 export type SignedVerdict = {
@@ -57,6 +61,35 @@ export type CheckResult = {
   receipt: Receipt
   /** The exact bytes stored in KV and hashed into receiptHash. */
   receiptJson: string
+}
+
+async function recordVerdict(
+  deps: CheckDeps,
+  agentId: string | undefined,
+  intentHash: Hex,
+  hash: Hex,
+  outcome: Verdict['outcome'],
+): Promise<ReceiptRegistryRecord> {
+  const response = OUTCOME_RESPONSE[outcome]
+  const base = { agentId: agentId ?? null, address: deps.registry?.address ?? null, response, tag: RULESET }
+  if (deps.registry === undefined) return { ...base, error: 'no validation registry is configured' }
+  if (agentId === undefined || agentId === '0') {
+    // "0" is the placeholder a mandate carries until the agent is registered. Agent id 0 exists on
+    // no Identity Registry, so sending it would spend gas on a certain revert.
+    return { ...base, error: 'the mandate carries no ERC-8004 agent id yet' }
+  }
+  try {
+    const tx = await deps.registry.write({
+      agentId: BigInt(agentId),
+      requestHash: intentHash,
+      response,
+      responseHash: hash,
+      tag: RULESET,
+    })
+    return { ...base, tx }
+  } catch (error) {
+    return { ...base, error: describeRegistryError(error) }
+  }
 }
 
 export async function runCheck(
@@ -128,7 +161,6 @@ export async function runCheck(
     checkedAtBlock,
     modelId: request.model ?? null,
   })
-  const receiptJson = canonicalJson(receipt)
   const hash = receiptHash(receipt)
   const domain = gateDomain(deps.chainId, deps.gate)
   const outcome = OUTCOME_CODE[verdict.outcome]
@@ -138,6 +170,12 @@ export async function runCheck(
     checkedAtBlock,
     receiptHash: hash,
   })
+
+  // Every verdict goes on the record, PASS, WAIT and FAIL alike. The response it posts is this
+  // receipt's own hash, so this runs after the signature and lands outside receiptHash. Fail-soft:
+  // the verdict is returned either way, and the receipt says what happened.
+  receipt.registry = await recordVerdict(deps, mandate.agentId, receipt.intent.intentHash, hash, verdict.outcome)
+  const receiptJson = canonicalJson(receipt)
 
   return {
     mandateId: request.mandateId,

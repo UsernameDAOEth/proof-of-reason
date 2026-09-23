@@ -7,7 +7,7 @@ import { CheckRequestV0 } from '../src/body.ts'
 import { HttpError, runCheck } from '../src/check.ts'
 import { CHECK_LAG_BLOCKS } from '../src/config.ts'
 import { MANDATES, MARKET_A, MARKET_B } from '../src/mandates.ts'
-import { FakeReader, GATE, HEAD, checkBody, checkDeps } from './helpers.ts'
+import { FakeReader, GATE, HEAD, checkBody, checkDeps, sealHashOf } from './helpers.ts'
 
 const account = privateKeyToAccount(generatePrivateKey())
 const mandate = MANDATES['demo-usdc-v1']!
@@ -23,7 +23,9 @@ describe('runCheck', () => {
     expect(result.signed.outcome).toBe(1)
     expect(result.signed.checkedAtBlock).toBe(HEAD - CHECK_LAG_BLOCKS)
     expect(result.signed.receiptHash).toBe(receiptHash(result.receipt))
-    expect(result.signed.receiptHash).toBe(keccak256(stringToBytes(result.receiptJson)))
+    // receiptHash covers every key of the stored receipt except `registry`, which is written after
+    // the signature (docs/MONAD.md section 12).
+    expect(result.signed.receiptHash).toBe(sealHashOf(result.receiptJson))
     expect(result.signed.domain).toEqual({ name: 'Proof of Reason', version: '1', chainId: 143, verifyingContract: GATE })
     const recovered = await recoverTypedDataAddress({
       domain: result.signed.domain,

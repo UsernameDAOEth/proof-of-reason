@@ -1,5 +1,6 @@
-import { encodeFunctionData, maxUint256 } from 'viem'
+import { encodeFunctionData, keccak256, maxUint256, stringToBytes } from 'viem'
 import type { Address, Hex, LocalAccount } from 'viem'
+import { canonicalJson } from 'proof-of-reason-engine/receipt'
 import type { FacilitatorClient } from '@x402/core/server'
 import type {
   PaymentPayload,
@@ -127,6 +128,16 @@ export class MemoryStore implements ReceiptStore {
   async put(key: string, value: string) {
     this.map.set(key, value)
   }
+}
+
+/**
+ * What a third party does with a receipt it fetched: drop `registry`, which is written after the
+ * verdict is signed and is the one key receiptHash does not cover, then canonicalise and hash.
+ */
+export function sealHashOf(receiptJson: string): Hex {
+  const { registry, ...sealed } = JSON.parse(receiptJson) as Record<string, unknown>
+  void registry
+  return keccak256(stringToBytes(canonicalJson(sealed)))
 }
 
 export function checkDeps(
