@@ -81,7 +81,7 @@ describe('config.yaml carries the same rule', () => {
     expect(configText).toContain('for: ${ENVIO_RPC_FOR:-fallback}')
   })
 
-  it('indexes the three contracts on Monad, with placeholder addresses', () => {
+  it('indexes the three contracts on Monad, each address quoted', () => {
     const config = parse(configText) as {
       name: string
       contracts: { name: string; handler: string; abi_file_path: string; events: { event: string }[] }[]
@@ -97,10 +97,12 @@ describe('config.yaml carries the same rule', () => {
     const network = config.networks[0]!
     expect(network.id).toBe(143)
     expect(network.contracts.map((c) => c.name)).toEqual(['ValidationRegistry', 'ReasonGate', 'KuruGate'])
-    // Placeholders, filled in from the runbook. A quoted string, so no YAML hex parsing.
+    // Quoted, so YAML reads each address as a string rather than as a hex integer, which envio
+    // rejects. The values themselves change as the deployment lands, so this pins the shape, not
+    // one deployment's addresses.
     for (const contract of network.contracts) {
-      expect(contract.address).toBe('0x0000000000000000000000000000000000000000')
-      expect(typeof contract.address).toBe('string')
+      expect(typeof contract.address, contract.name).toBe('string')
+      expect(contract.address, contract.name).toMatch(/^0x[0-9a-fA-F]{40}$/)
     }
   })
 

@@ -5,6 +5,7 @@ packages:
   - examples/jev-trader-gated
   - envio
   - envio/worker
+  - site
 # wrangler's native toolchain: install scripts only place platform binaries.
 allowBuilds:
   esbuild: true

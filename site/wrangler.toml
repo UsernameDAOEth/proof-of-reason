@@ -1,0 +1,16 @@
+# proofofreason.com: one static page, served by a Cloudflare Worker with static assets.
+# No main script, no bindings, no secrets: there is nothing here but files.
+# Zone facts in docs/MONAD.md section 7. Deploy command in docs/SITE.md.
+name = "proof-of-reason-site"
+compatibility_date = "2026-09-01"
+account_id = "b4223803d1bd8d0ffb0136a064a0fb16"
+# Serve only the production hostname, never a *.workers.dev URL.
+workers_dev = false
+routes = [
+  { pattern = "proofofreason.com", custom_domain = true },
+]
+
+[assets]
+directory = "./public"
+# One page: anything else is a 404 from the same directory.
+not_found_handling = "404-page"

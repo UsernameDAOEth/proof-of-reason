@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Proof of Reason</title>
+<meta name="description" content="The vault only moves when the agent's stated reason is true on-chain, in mandate, and complete. Live on Monad mainnet.">
+<meta name="color-scheme" content="dark">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&amp;display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="site">
+<div class="wrap">
+<h1>Proof of Reason</h1>
+<p class="lede">The vault only moves when the agent's stated reason is true on-chain, in mandate, and complete.</p>
+</div>
+</header>
+
+<main class="wrap">
+
+<section id="doctrine">
+<h2>Doctrine</h2>
+<blockquote class="doctrine">
+<p>The LLM reads. The chain testifies. TypeScript decides.</p>
+<p class="principle">Hold the veto, never the keys.</p>
+</blockquote>
+</section>
+
+<section id="how">
+<h2>How it works</h2>
+<ol class="steps">
+<li>The agent states its reason as typed claims.</li>
+<li>The validator reads chain state at a pinned block and checks every premise.</li>
+<li>A signed verdict, <span class="pass">PASS</span>, <span class="wait">WAIT</span> or <span class="fail">FAIL</span>, is written to an ERC-8004 validation registry.</li>
+<li>The gate executes only on <span class="pass">PASS</span>, asks the owner on <span class="wait">WAIT</span>, and reverts on <span class="fail">FAIL</span>.</li>
+</ol>
+<p class="not">What it does not do: it does not judge whether a decision is wise, only whether its premises are true and allowed.</p>
+</section>
+
+<section id="live">
+<h2>Live on Monad</h2>
+<table>
+<caption>Monad mainnet, chain 143. Addresses link to Monad Vision.</caption>
+<thead>
+<tr><th scope="col">What</th><th scope="col">Address</th></tr>
+</thead>
+<tbody>
+<tr>
+<th scope="row">Vault</th>
+<td><a href="https://monadvision.com/address/0x28900B0B2DDA5d2d61cDF17BE8b7091206a04Bf9"><code>0x28900B0B2DDA5d2d61cDF17BE8b7091206a04Bf9</code></a></td>
+</tr>
+<tr>
+<th scope="row">Gate</th>
+<td><a href="https://monadvision.com/address/0x8fF582f268aB8E2148B548Aa061c5273bC383120"><code>0x8fF582f268aB8E2148B548Aa061c5273bC383120</code></a></td>
+</tr>
+<tr>
+<th scope="row">Validation registry</th>
+<td><a href="https://monadvision.com/address/0x8e2b835d43bB93cE46CcA9994f41596dB162007C"><code>0x8e2b835d43bB93cE46CcA9994f41596dB162007C</code></a></td>
+</tr>
+<tr>
+<th scope="row">Validator</th>
+<td><a href="https://monadvision.com/address/0xEC37691732204714DDfd024B67F1B7abfcF3FC9E"><code>0xEC37691732204714DDfd024B67F1B7abfcF3FC9E</code></a></td>
+</tr>
+<tr>
+<th scope="row">Identity registry</th>
+<td><a href="https://monadvision.com/address/0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"><code>0x8004A169FB4a3325136EB29fA0ceB6D2e539a432</code></a></td>
+</tr>
+<tr>
+<th scope="row">Demo agent</th>
+<td>ERC-8004 id <code>10258</code> on the identity registry above</td>
+</tr>
+<tr>
+<th scope="row">API</th>
+<td><a href="https://api.proofofreason.com"><code>https://api.proofofreason.com</code></a>, x402, 0.10 USDC per check, exact scheme, <code>eip155:143</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<section id="prereg">
+<h2>Pre-registered, before any code</h2>
+<dl class="facts">
+<dt>sha256 of docs/PREREG.md</dt>
+<dd><code>5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4</code></dd>
+<dt>Gate dates</dt>
+<dd>
+<ul class="dates">
+<li>13 Oct: first read.</li>
+<li>3 Nov: second read.</li>
+<li>15 Dec: fit gate.</li>
+</ul>
+</dd>
+</dl>
+<p>Results publish whichever way they fall.</p>
+</section>
+
+<section id="record">
+<h2>Record</h2>
+<ul class="plain">
+<li>
+Every verdict is sealed by a receipt, served at
+<a href="https://api.proofofreason.com/receipts/"><code>https://api.proofofreason.com/receipts/{intentHash}</code></a>.
+</li>
+<li>
+Agent compliance page:
+<a href="https://agents.proofofreason.com/agents/0x8fF582f268aB8E2148B548Aa061c5273bC383120"><code>https://agents.proofofreason.com/agents/{gate}</code></a>.
+<span class="muted">Indexer deploys 28 Sep.</span>
+</li>
+<li>
+How the issuer handles being wrong:
+<a href="https://djzs.ai/ruleset">the DJZS correction record</a>.
+</li>
+</ul>
+</section>
+
+</main>
+
+<footer class="site">
+<div class="wrap">
+<p>Proof of Reason, by DJZS AI, LLC. <a href="mailto:dj@proofofreason.com">dj@proofofreason.com</a>. Built for Monad Metropolis, Track 04.</p>
+<p><code>username.dj-z-s.eth</code></p>
+</div>
+</footer>
+
+</body>
+</html>
