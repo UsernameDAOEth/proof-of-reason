@@ -44,7 +44,7 @@ networks:
       # Placeholder addresses: REGISTRY and GATE from docs/DEPLOY_RUNBOOK.md steps 5 and 6a, and the
       # KuruGate from examples/jev-trader-gated once it is deployed.
       - name: ValidationRegistry
-        address: "0xREPLACE_WITH_REGISTRY"
+        address: "0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
       - name: ReasonGate
         address: "0x0000000000000000000000000000000000000000"
       - name: KuruGate

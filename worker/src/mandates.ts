@@ -15,7 +15,7 @@ export const MANDATES = {
     // ERC-8004 agent id of the demo agent, from runbook step 6. "0" is the placeholder until 2B
     // registers it: with a placeholder every receipt records a registry error and no verdict is
     // written, which is visible rather than silent.
-    agentId: 'REPLACE_WITH_AGENT_ID',
+    agentId: '10258',
   },
   // A typed-decision mandate (engine TypedDecisionMandate) may be registered here the same way;
   // examples/jev-trader-gated/mandate.json carries one, and adding it is a redeploy.

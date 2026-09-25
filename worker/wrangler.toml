@@ -20,7 +20,7 @@ GATE_ADDRESS = ""
 VAULT_ADDRESS = ""
 PAY_TO = ""
 # Interim ERC-8004 Validation Registry, from the DeployRegistry log in runbook step 6.
-REGISTRY_ADDRESS = "0xREPLACE_WITH_REGISTRY"
+REGISTRY_ADDRESS = "0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
 
 [[kv_namespaces]]
 binding = "RECEIPTS"
