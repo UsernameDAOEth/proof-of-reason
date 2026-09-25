@@ -25,4 +25,4 @@ REGISTRY_ADDRESS = "0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
 [[kv_namespaces]]
 binding = "RECEIPTS"
 # Filled in during 2B from `pnpm exec wrangler kv namespace create RECEIPTS`.
-id = ""
+id = "f2856a81b0e644c0b09538fd4430db4a"
