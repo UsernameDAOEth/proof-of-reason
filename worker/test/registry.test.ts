@@ -173,13 +173,14 @@ describe('the write is fail-soft', () => {
       error: 'no validation registry is configured',
     })
 
-    // The bundled mandate carries the placeholder "0" until 2B registers the demo agent. Agent id 0
-    // exists on no Identity Registry, so nothing is sent.
-    expect(MANDATES['demo-usdc-v1']!.agentId).toBe('0')
+    // 2B registered the demo agent, so the bundled mandate carries its real id.
+    expect(MANDATES['demo-usdc-v1']!.agentId).toBe('10258')
+    // The placeholder path is still the one being tested here: agent id 0 exists on no Identity
+    // Registry, so nothing is sent for a mandate that still carries it.
     const { writes, writer } = fakeRegistry()
     const placeholder = await runCheck(
       request(),
-      MANDATES['demo-usdc-v1']!,
+      { ...MANDATES['demo-usdc-v1']!, agentId: '0' },
       checkDeps(account, undefined, { registry: writer }),
     )
     expect(writes).toEqual([])

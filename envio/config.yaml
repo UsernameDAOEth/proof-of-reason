@@ -35,20 +35,21 @@ contracts:
       - event: AgentSet(address indexed previousAgent, address indexed newAgent)
 networks:
   - id: 143
-    # Start blocks are filled in after 2B, from the block the earliest indexed contract was deployed
-    # in. 0 is correct but makes a cold sync walk the whole chain.
-    start_block: 0
+    # The vault deploy block, 2026-09-25 01:06 UTC (24 Sep local), from tx
+    # 0x374f4c68b5655fae5a856c1c6e0108a9691359a87636534a76db0b29a3a84f0d. It is the floor for all
+    # three contracts: neither the gate nor the registry had code at this block, so both were
+    # deployed after it and no event of theirs is earlier.
+    start_block: 107757491
     rpc:
       url: ${ENVIO_RPC_URL}
       for: ${ENVIO_RPC_FOR:-fallback}
     contracts:
-      # ValidationRegistry carries its live address, from docs/DEPLOY_RUNBOOK.md step 6a. The gate
-      # addresses are filled in after 2B deploys them: ReasonGate from step 5, KuruGate from
-      # examples/jev-trader-gated. A zero address indexes nothing, so a gate left at zero means no
-      # pass, wait or override is counted for it.
+      # Live addresses: ValidationRegistry from docs/DEPLOY_RUNBOOK.md step 6a, ReasonGate from step
+      # 5. KuruGate is still a placeholder until examples/jev-trader-gated is deployed, and a zero
+      # address indexes nothing, so no pass, wait or override is counted for that gate yet.
       - name: ValidationRegistry
         address: "0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
       - name: ReasonGate
-        address: "0x0000000000000000000000000000000000000000"
+        address: "0x8fF582f268aB8E2148B548Aa061c5273bC383120"
       - name: KuruGate
         address: "0x0000000000000000000000000000000000000000"

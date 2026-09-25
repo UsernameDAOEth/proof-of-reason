@@ -116,8 +116,10 @@ describe('every fact is on the page, verbatim', () => {
     expect(html).toContain('Monad mainnet, chain 143')
   })
 
-  it('carries the demo agent id and the x402 terms', () => {
+  it('carries both agent ids and the x402 terms', () => {
+    // 10258 is the agent being gated; 10259 is the validator's own ERC-8004 identity.
     expect(html).toContain('10258')
+    expect(html).toContain('10259')
     expect(html).toContain('https://api.proofofreason.com')
     expect(html).toContain('x402, 0.10 USDC per check, exact scheme')
     expect(html).toContain('eip155:143')
