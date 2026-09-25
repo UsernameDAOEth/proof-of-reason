@@ -1,0 +1,47 @@
+{
+  "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+  "name": "Proof of Reason",
+  "description": "A premise check on automated allocation, issued by DJZS AI, LLC. Before a vault moves money, Proof of Reason checks the reason its allocator gives: premises against chain state, the action against the principal's mandate, required fields present. It returns a signed verdict that an on-chain gate enforces. The gate holds the veto, never the keys.",
+  "services": [
+    {
+      "name": "x402",
+      "endpoint": "https://api.proofofreason.com/check",
+      "version": "2",
+      "method": "POST",
+      "scheme": "exact",
+      "network": "eip155:143",
+      "asset": "0x754704Bc059F8C67012fEd69BC8A327a5aafb603",
+      "amount": "100000"
+    },
+    {
+      "name": "receipts",
+      "endpoint": "https://api.proofofreason.com/receipts/{intentHash}",
+      "method": "GET"
+    },
+    {
+      "name": "web",
+      "endpoint": "https://proofofreason.com"
+    },
+    {
+      "name": "ENS",
+      "endpoint": "username.dj-z-s.eth",
+      "version": "1.0"
+    }
+  ],
+  "registrations": [
+    {
+      "agentId": 10259,
+      "agentRegistry": "eip155:143:0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+    }
+  ],
+  "active": true,
+  "x402Support": true,
+  "prereg_sha256": "5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4",
+  "metadata": {
+    "chainId": 143,
+    "ruleset": "REASON-R0",
+    "contact": "dj@proofofreason.com",
+    "validator": "0xEC37691732204714DDfd024B67F1B7abfcF3FC9E",
+    "gate": "0x8fF582f268aB8E2148B548Aa061c5273bC383120"
+  }
+}
