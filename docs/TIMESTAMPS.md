@@ -1,1 +1,2 @@
 - 2026-09-25: first paid check announced from @Djzs_ai with the receipt card: https://x.com/Djzs_ai/status/2103588968965226508 (receipt 0x45ab90694af77667d82c0b3047611c4ac707b3e3f94cda5cd67aad63735298e3, registry tx 0x4eb4422544c1120c5133653d06469ab7ef44574eeaf0ecd4bcf1134311740240, execute tx 0xfcc50dadc9635a268ab55c5065ad7d4226b4d222180280e604f6834d72e6d3af)
+- 2026-09-25: pre-registration digest 5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4 published from @Djzs_ai: https://x.com/Djzs_ai/status/2103540228128694716
