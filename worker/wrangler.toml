@@ -16,9 +16,9 @@ routes = [
 
 [vars]
 # Filled in during 2B from the DeployVault / DeployGate logs and DJ's USDC receiving address.
-GATE_ADDRESS = ""
-VAULT_ADDRESS = ""
-PAY_TO = ""
+GATE_ADDRESS = "0x8fF582f268aB8E2148B548Aa061c5273bC383120"
+VAULT_ADDRESS = "0x28900B0B2DDA5d2d61cDF17BE8b7091206a04Bf9"
+PAY_TO = "0xA6Ad9B6e390979c8e4BA9c7Eb7cFd701dE1F9275"
 # Interim ERC-8004 Validation Registry, from the DeployRegistry log in runbook step 6.
 REGISTRY_ADDRESS = "0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
 
