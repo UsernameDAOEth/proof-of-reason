@@ -6,6 +6,7 @@ packages:
   - envio
   - envio/worker
   - site
+  - scripts
 # wrangler's native toolchain: install scripts only place platform binaries.
 allowBuilds:
   esbuild: true

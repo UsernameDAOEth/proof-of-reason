@@ -11,3 +11,6 @@ worker/.wrangler/
 *.env
 .dev.vars
 .dev.vars.*
+
+# demo-check.ts persists the signed verdict between subcommands. Never committed.
+.demo/
