@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
@@ -23,6 +23,18 @@ const ADDRESSES = {
 } as const
 
 const PREREG_SHA256 = '5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4'
+
+/** The first receipt the page leads the record with, and the two transactions that followed it. */
+const FIRST = {
+  intentHash: '0x45ab90694af77667d82c0b3047611c4ac707b3e3f94cda5cd67aad63735298e3',
+  registryTx: '0x4eb4422544c1120c5133653d06469ab7ef44574eeaf0ecd4bcf1134311740240',
+  executionTx: '0xfcc50dadc9635a268ab55c5065ad7d4226b4d222180280e604f6834d72e6d3af',
+  block: '107991649',
+} as const
+
+/** The published receipt itself, when the video kit is checked out beside the site. */
+const receiptPath = join(siteDir, '..', 'vid', 'receipts', 'pass.json')
+const hasReceipt = existsSync(receiptPath)
 
 /** The token block copied from https://djzs.ai/style.css. */
 const TOKENS = {
@@ -91,6 +103,48 @@ describe('every fact is on the page, verbatim', () => {
     )
   })
 
+  it('states who it is for, and that the validator is not paid to say yes', () => {
+    expect(html).toContain('<h2>Who it is for</h2>')
+    expect(html).toContain('For principals who have to answer for an automated allocator:')
+    expect(html).toContain('vault curators evidencing reallocations to depositors')
+    expect(html).toContain('insurers pricing an AI-allocated vault')
+    expect(html).toContain('platforms deciding what to list.')
+    expect(html).toContain('The agent pays 0.10 USDC per check over x402.')
+    // The verdict trio is marked up here as it is everywhere else, so the sentence spans them.
+    expect(html).toContain('The validator earns the same on')
+    expect(html).toContain('so it is never paid to say yes.')
+  })
+
+  it('states the two failures it catches, with the amounts', () => {
+    expect(html).toContain('<h2>What it catches</h2>')
+    expect(html).toContain(
+      'A false premise. Stream Finance, November 2025: a hardcoded $1.00 oracle against a $0.26 market, $285M exposed.',
+    )
+    expect(html).toContain('The TRUE check reads the price at the block.')
+    expect(html).toContain(
+      'A disallowed action. Grok/Bankr, May 2026: a prompt-injected permission grant, $174k out.',
+    )
+    expect(html).toContain('The ALLOWED check holds the mandate.')
+    expect(html).toContain('Most agent gates check permissions. Proof of Reason checks premises.')
+  })
+
+  it('states why the block time matters, with every timing it claims', () => {
+    expect(html).toContain('<h2>Why Monad</h2>')
+    expect(html).toContain('A verdict is only useful if execution follows before the state it checked moves.')
+    expect(html).toContain("The gate accepts a verdict for 60 blocks, about 18 seconds at Monad's 0.30 s block time.")
+    expect(html).toContain('The first check to execution took 11 blocks, 3.3 seconds.')
+    expect(html).toContain('The same 60-block bound on Ethereum L1 is 12 minutes.')
+  })
+
+  it('states the known limits', () => {
+    expect(html).toContain('<h2>Known limits</h2>')
+    expect(html).toContain(
+      'One validator key today; every verdict is on the registry and re-checkable by anyone, and a second validator is the roadmap.',
+    )
+    expect(html).toContain('The check judges premises and mandate, not whether the decision is wise.')
+    expect(html).toContain("The registry is interim until Monad's canonical ERC-8004 validation registry ships.")
+  })
+
   it('states the doctrine and the principle', () => {
     expect(html).toContain('The LLM reads. The chain testifies. TypeScript decides.')
     expect(html).toContain('Hold the veto, never the keys.')
@@ -141,7 +195,37 @@ describe('every fact is on the page, verbatim', () => {
     expect(html).toContain('How the issuer handles being wrong')
   })
 
+  it('leads the record with the first receipt, linked, and the two transactions after it', () => {
+    expect(html).toContain(`<a href="https://api.proofofreason.com/receipts/${FIRST.intentHash}">`)
+    expect(html).toContain('First receipt, 25 Sep 2026:')
+    expect(html).toContain(`<span class="pass">PASS</span> at block ${FIRST.block}.`)
+    expect(html).toContain(`<a href="https://monadvision.com/tx/${FIRST.registryTx}">registry write</a>`)
+    expect(html).toContain(`<a href="https://monadvision.com/tx/${FIRST.executionTx}">execution</a>`)
+    expect(FIRST.registryTx).not.toBe(FIRST.executionTx)
+  })
+
+  it('leaves the compliance page as plain text, spaced, until the indexer deploys', () => {
+    // docs/SITE.md says this one is published as a pattern, not a live link. Now it is.
+    expect(html).not.toContain('<a href="https://agents.proofofreason.com')
+    // And the space before "Indexer" is in the source, not left to a collapsing newline.
+    expect(html).toContain(
+      '<code>https://agents.proofofreason.com/agents/{gate}</code>. <span class="muted">Indexer deploys 28 Sep.</span>',
+    )
+  })
+
+  // When the video kit is checked out beside the site, the page's first-receipt claim is held
+  // against the receipt that was actually published, so the two cannot drift apart.
+  it.skipIf(!hasReceipt)('leads with the receipt that was really published', () => {
+    const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
+    expect(receipt.intent.intentHash).toBe(FIRST.intentHash)
+    expect(String(receipt.verdict.checkedAtBlock)).toBe(FIRST.block)
+    expect(receipt.registry.tx).toBe(FIRST.registryTx)
+    expect(receipt.verdict.outcome).toBe('PASS')
+    expect(receipt.provenance.url).toBe(`https://api.proofofreason.com/receipts/${FIRST.intentHash}`)
+  })
+
   it('carries the footer, with the one ENS name and no other', () => {
+    expect(html).toContain('Running an allocator? Write a mandate with us:')
     expect(html).toContain('Proof of Reason, by DJZS AI, LLC.')
     expect(html).toContain('dj@proofofreason.com')
     expect(html).toContain('Built for Monad Metropolis, Track 04.')
@@ -150,15 +234,20 @@ describe('every fact is on the page, verbatim', () => {
     expect([...new Set(ensNames)]).toEqual(['username.dj-z-s.eth'])
   })
 
-  it('puts the seven blocks in the order the brief sets', () => {
+  it('puts every block in the order the brief sets', () => {
     // Heading markup, not bare text: "Live on Monad" also appears in the meta description.
     const order = [
       '<h1>Proof of Reason</h1>',
+      '<h2>Who it is for</h2>',
       '<h2>Doctrine</h2>',
       '<h2>How it works</h2>',
+      '<h2>What it catches</h2>',
       '<h2>Live on Monad</h2>',
+      '<h2>Why Monad</h2>',
       '<h2>Pre-registered, before any code</h2>',
       '<h2>Record</h2>',
+      '<h2>Known limits</h2>',
+      'Running an allocator? Write a mandate with us:',
       'Proof of Reason, by DJZS AI, LLC.',
     ].map((marker) => html.indexOf(marker))
     expect(order.every((index) => index >= 0)).toBe(true)
@@ -211,7 +300,7 @@ describe('brand law', () => {
 describe('readable with CSS disabled', () => {
   it('is one document outline, not a layout', () => {
     expect((html.match(/<h1\b/g) ?? []).length).toBe(1)
-    expect((html.match(/<h2\b/g) ?? []).length).toBe(5)
+    expect((html.match(/<h2\b/g) ?? []).length).toBe(9)
     // The table is a table, with headers a screen reader can use.
     expect(html).toContain('<caption>')
     expect(html).toContain('<thead>')

@@ -23,6 +23,12 @@
 
 <main class="wrap">
 
+<section id="audience">
+<h2>Who it is for</h2>
+<p>For principals who have to answer for an automated allocator: vault curators evidencing reallocations to depositors, insurers pricing an AI-allocated vault, platforms deciding what to list.</p>
+<p>The agent pays 0.10 USDC per check over x402. The validator earns the same on <span class="pass">PASS</span>, <span class="wait">WAIT</span> and <span class="fail">FAIL</span>, so it is never paid to say yes.</p>
+</section>
+
 <section id="doctrine">
 <h2>Doctrine</h2>
 <blockquote class="doctrine">
@@ -40,6 +46,15 @@
 <li>The gate executes only on <span class="pass">PASS</span>, asks the owner on <span class="wait">WAIT</span>, and reverts on <span class="fail">FAIL</span>.</li>
 </ol>
 <p class="not">What it does not do: it does not judge whether a decision is wise, only whether its premises are true and allowed.</p>
+</section>
+
+<section id="catches">
+<h2>What it catches</h2>
+<ul class="plain">
+<li>A false premise. Stream Finance, November 2025: a hardcoded $1.00 oracle against a $0.26 market, $285M exposed. The TRUE check reads the price at the block.</li>
+<li>A disallowed action. Grok/Bankr, May 2026: a prompt-injected permission grant, $174k out. The ALLOWED check holds the mandate.</li>
+</ul>
+<p>Most agent gates check permissions. Proof of Reason checks premises.</p>
 </section>
 
 <section id="live">
@@ -86,6 +101,11 @@
 </table>
 </section>
 
+<section id="why-monad">
+<h2>Why Monad</h2>
+<p>A verdict is only useful if execution follows before the state it checked moves. The gate accepts a verdict for 60 blocks, about 18 seconds at Monad's 0.30 s block time. The first check to execution took 11 blocks, 3.3 seconds. The same 60-block bound on Ethereum L1 is 12 minutes.</p>
+</section>
+
 <section id="prereg">
 <h2>Pre-registered, before any code</h2>
 <dl class="facts">
@@ -107,13 +127,16 @@
 <h2>Record</h2>
 <ul class="plain">
 <li>
+<a href="https://api.proofofreason.com/receipts/0x45ab90694af77667d82c0b3047611c4ac707b3e3f94cda5cd67aad63735298e3">First receipt, 25 Sep 2026: <span class="pass">PASS</span> at block 107991649.</a>
+Then the <a href="https://monadvision.com/tx/0x4eb4422544c1120c5133653d06469ab7ef44574eeaf0ecd4bcf1134311740240">registry write</a>, then the <a href="https://monadvision.com/tx/0xfcc50dadc9635a268ab55c5065ad7d4226b4d222180280e604f6834d72e6d3af">execution</a>.
+</li>
+<li>
 Every verdict is sealed by a receipt, served at
 <a href="https://api.proofofreason.com/receipts/"><code>https://api.proofofreason.com/receipts/{intentHash}</code></a>.
 </li>
 <li>
 Agent compliance page:
-<a href="https://agents.proofofreason.com/agents/0x8fF582f268aB8E2148B548Aa061c5273bC383120"><code>https://agents.proofofreason.com/agents/{gate}</code></a>.
-<span class="muted">Indexer deploys 28 Sep.</span>
+<code>https://agents.proofofreason.com/agents/{gate}</code>. <span class="muted">Indexer deploys 28 Sep.</span>
 </li>
 <li>
 How the issuer handles being wrong:
@@ -122,10 +145,20 @@ How the issuer handles being wrong:
 </ul>
 </section>
 
+<section id="limits">
+<h2>Known limits</h2>
+<ul class="plain">
+<li>One validator key today; every verdict is on the registry and re-checkable by anyone, and a second validator is the roadmap.</li>
+<li>The check judges premises and mandate, not whether the decision is wise.</li>
+<li>The registry is interim until Monad's canonical ERC-8004 validation registry ships.</li>
+</ul>
+</section>
+
 </main>
 
 <footer class="site">
 <div class="wrap">
+<p>Running an allocator? Write a mandate with us: <a href="mailto:dj@proofofreason.com">dj@proofofreason.com</a></p>
 <p>Proof of Reason, by DJZS AI, LLC. <a href="mailto:dj@proofofreason.com">dj@proofofreason.com</a>. Built for Monad Metropolis, Track 04.</p>
 <p><code>username.dj-z-s.eth</code></p>
 </div>
