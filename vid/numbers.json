@@ -1,0 +1,152 @@
+{
+  "_source": "Facts verified on Monad mainnet, chain 143, and from the repository suites. This file is the home for every string a frame puts on screen that a receipt cannot carry: the frame identity, the per-verdict wording, and everything on an open, numbers or end frame. vid/test/test_trace.py holds that line.",
+  "status": "CONFIRMED",
+  "frame": {
+    "_note": "The rail and the identity block. Not receipt derived: this is who publishes.",
+    "rail": "// PROOF_OF_REASON",
+    "sys_id": "por-monad-01",
+    "brand": "PROOF OF REASON",
+    "identity": [
+      "proofofreason.com",
+      "DJZS AI, LLC · issuer",
+      "username.dj-z-s.eth"
+    ],
+    "domain": "proofofreason.com",
+    "ens": "username.dj-z-s.eth"
+  },
+  "receipts": {
+    "_note": "One entry per verdict short. Only a receipt published at api.proofofreason.com is rendered; pending entries have no file, no url, no wording and no output. The title and subtitle are this verdict's own words, so a pending verdict cannot borrow the words written for another.",
+    "pass": {
+      "state": "rendered",
+      "file": "receipts/pass.json",
+      "url": "https://api.proofofreason.com/receipts/0x45ab90694af77667d82c0b3047611c4ac707b3e3f94cda5cd67aad63735298e3",
+      "window": "typed stand-in; screen recording replaces it on 2026-09-30",
+      "title": "THE AGENT STATED ITS REASON.",
+      "subtitle": "the chain said true. the gate moved the money."
+    },
+    "fail": {
+      "state": "pending",
+      "file": null,
+      "url": null
+    },
+    "wait": {
+      "state": "pending",
+      "file": null,
+      "url": null
+    }
+  },
+  "open": {
+    "series": [
+      "PROOF OF REASON //",
+      "MONAD MAINNET 143"
+    ],
+    "series_thumb": "// PROOF OF REASON / MONAD 143",
+    "laws_on": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "proof": [
+      "chain: monad mainnet 143",
+      "price: 0.10 USDC per check",
+      "first paid check: block 107991649"
+    ],
+    "verdict": "",
+    "title": [
+      "PROOF OF REASON",
+      "MONAD MAINNET 143"
+    ],
+    "run": "> deployed: 2026-09-25 01:06Z",
+    "h1": "THE VAULT ONLY MOVES WHEN THE REASON IS TRUE",
+    "lines": [
+      "the LLM reads. the chain testifies. TypeScript decides.",
+      "hold the veto, never the keys.",
+      "vault 0x28900B0B2DDA5d2d61cDF17BE8b7091206a04Bf9",
+      "gate 0x8fF582f268aB8E2148B548Aa061c5273bC383120",
+      "registry 0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
+    ],
+    "dur": 9,
+    "thumb_title": "PROOF OF REASON",
+    "thumb_sub": [
+      "monad mainnet 143",
+      "premises checked, then executed"
+    ]
+  },
+  "numbers": {
+    "series": [
+      "THE NUMBERS //",
+      "BUILT AND MEASURED"
+    ],
+    "series_thumb": "// THE NUMBERS / MONAD 143",
+    "laws_on": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "proof": [
+      "tests: 105 forge, 329 vitest",
+      "gas: 488976 gate, 300000 registry",
+      "freshness: 60 blocks"
+    ],
+    "verdict": "",
+    "title": [
+      "THE NUMBERS",
+      "MONAD MAINNET 143"
+    ],
+    "run": "> measured: 2026-09-25",
+    "h1": "THE NUMBERS",
+    "lines": [
+      "105 forge tests, 1 skipped. 329 vitest tests. 0 failing.",
+      "one paid check: 0.10 USDC, x402 exact, eip155:143",
+      "gate execute 488976 gas. registry write 300000 gas.",
+      "verdict accepted for 60 blocks, about 18 seconds.",
+      "5.000000 USDC moved from market A to market B."
+    ],
+    "dur": 11,
+    "thumb_title": "THE NUMBERS",
+    "thumb_sub": [
+      "105 forge, 329 vitest, 0 failing",
+      "one paid check, one reallocation"
+    ]
+  },
+  "end": {
+    "series": [
+      "END_TRANSMISSION //",
+      "PRE-REGISTERED"
+    ],
+    "series_thumb": "// END_TRANSMISSION / PRE-REGISTERED",
+    "laws_on": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "proof": [
+      "prereg: 5f6a494f...02c7c2d4",
+      "gates: 13 Oct, 3 Nov, 15 Dec",
+      "receipts: api.proofofreason.com"
+    ],
+    "verdict": "",
+    "title": [
+      "END_TRANSMISSION.",
+      "PRE-REGISTERED BEFORE ANY CODE"
+    ],
+    "run": "> next gate: 2026-10-13",
+    "h1": "END_TRANSMISSION.",
+    "lines": [
+      "pre-registration sha256:",
+      "5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4",
+      "gate dates: 13 Oct, 3 Nov, 15 Dec.",
+      "Results publish whichever way they fall.",
+      "This is a record of what was checked, not advice."
+    ],
+    "dur": 10,
+    "thumb_title": "END_TRANSMISSION.",
+    "thumb_sub": [
+      "pre-registered before any code",
+      "results publish either way"
+    ]
+  }
+}
