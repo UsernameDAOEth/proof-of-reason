@@ -33,13 +33,20 @@ As the agent, from `contracts/.env.agent`:
 
 1. Reads the vault's position in market A at the head minus 2 blocks, the same block the validator
    will read.
-2. Builds MetaMorpho V1.1 `reallocate` calldata that moves 5 USDC from market A to market B. The
-   struct is the one the engine and the gate already agree on, so the selector is `0x7299aa31`, which
-   is the only selector this gate allowlists.
+2. Builds MetaMorpho V1.1 `reallocate` calldata that moves `--amount` USDC, **4 by default**, from
+   market A to market B (`--from B` reverses it). The struct is the one the engine and the gate
+   already agree on, so the selector is `0x7299aa31`, which is the only selector this gate
+   allowlists.
 3. Reads market B's supply rate and withdrawable liquidity at that block, then states the claims from
    what it read: the APY to four decimal places within a 0.1 point tolerance, and a liquidity floor at
    90 percent of the worst block in the window. A claim is phrased after the reading, never before.
-4. POSTs to `https://api.proofofreason.com/check`, is refused with a 402 carrying the price and the
+4. **Preflight, free, before any payment**: an `eth_call` of `vault.reallocate` with that calldata,
+   sent from the gate's address. The gate is the vault's allocator, so the vault runs exactly the
+   checks it will run when the gate forwards the call. On a revert, `check` prints the error by name
+   with the market labelled A or B, for example
+   `SupplyCapExceeded(market B 0x093bd940...)`, and stops: no key is read, nothing is paid. A dry run
+   runs the preflight too.
+5. POSTs to `https://api.proofofreason.com/check`, is refused with a 402 carrying the price and the
    USDC EIP-712 domain, signs an EIP-3009 transfer authorization for 0.10 USDC with the agent key,
    and posts again with the payment header. Nothing but that authorization is signed: no transaction
    leaves this process.
@@ -51,10 +58,27 @@ URL, and no key.
 
 ### 3. `execute`, the part that moves money
 
-As the agent: rebuilds the intent hash from the saved intent and refuses if it does not match the
-verdict it holds, refuses a FAIL, refuses a WAIT (that needs the owner's signature, which this script
-does not have), refuses a stale verdict or a used nonce, prints the vault's per-market balances,
-calls `gate.execute` with an explicit gas limit, then prints the balances again and the difference.
+As the agent: rebuilds the intent hash from the saved intent under the deployed gate's EIP-712
+domain (version 1) and refuses if it does not match the verdict it holds, refuses a stale verdict or
+a used nonce, prints the vault's per-market balances, calls `gate.execute` with an explicit gas
+limit, then prints the balances again and the difference.
+
+It refuses a FAIL unless `--simulate` is given, and a WAIT unless `--owner-sig` is given:
+
+- `--simulate` makes an `eth_call` of `execute` from the agent address and prints the gate's revert
+  decoded by name, for example `Refuted(0x..., 0x...)`. Nothing is signed and nothing is sent, and no
+  key is read.
+- `--owner-sig` signs the gate's EIP-712 `Override(bytes32 intentHash)` for the saved intent with
+  `PRIVATE_KEY` from `contracts/.env.deploy`, after checking that the key's address is the gate's
+  live `owner()` (0xBBfcf117A17eBC65F562e06AfDe5995cD38AA1AF, which also owns the vault). The gate
+  checks exactly that signer: `SignatureChecker.isValidSignatureNow(owner(), digest, ownerSig)` at
+  `contracts/src/ReasonGate.sol` line 194 as committed at HEAD, the deployed v1 source (read it with
+  `git show HEAD:contracts/src/ReasonGate.sol`). The key is never printed.
+
+### 4. `receipt --save PATH`
+
+Fetches `https://api.proofofreason.com/receipts/` plus the intent hash of the last check from the
+live API and writes the bytes it served to `PATH`, unparsed. The receipt is never built locally.
 
 ## What a judge sees
 
@@ -96,9 +120,112 @@ Three things are worth pointing at while it runs:
 - **The receipt is the artifact.** Open the receipt URL: it carries the claims, the observations, the
   block they were read at, the verdict and the mandate, and its own hash is what the validator signed
   and what the gate checked.
-- **The refusal path is the product.** To see it, edit a claim by hand so it is false, for example
-  raise the liquidity floor above what the market holds, and run `check` again: the verdict is FAIL,
-  the receipt says which premise failed and what was observed instead, and `execute` refuses to send.
+- **The refusal path is the product.** Take 2 below shows it: a rate stated 5 points above what the
+  chain shows is FAIL, the receipt says which claim failed and what was observed instead, and the
+  gate's own answer to the call is `Refuted`.
+
+## The three takes
+
+One sitting, three paid checks, on the deployed gate v1
+(0x8fF582f268aB8E2148B548Aa061c5273bC383120), vault 0x28900B0B2DDA5d2d61cDF17BE8b7091206a04Bf9,
+mandate `demo-usdc-v1`, market A
+0x9e8441e7af65860feac831ebc117473e3033321abf528ebc8fbde1eeaaa3a626 and market B
+0x093bd94086b08a013c96dc0776ebf663e9300e742a2c14479211cc35da6c3439.
+
+### The caps, and why 4 USDC
+
+The vault caps each market at exactly **10.000000 USDC** of supply, and holds about **A 5 / B 5**
+(5.005075 and 5.004221 USDC at block 109167154). Moving 5.000000 USDC into either market takes it
+over its cap, and MetaMorpho reverts `SupplyCapExceeded(bytes32)`, selector `0x5e25afa5`, with the
+market id as data. Market B takes at most 4.995779 more, market A at most 4.994925. So `check`
+moves **4 USDC by default**, and the preflight refuses anything that would not fit before a cent is
+paid:
+
+```sh
+node scripts/demo-check.ts check --dry-run --amount 5
+```
+
+prints `failed: preflight: the vault would revert SupplyCapExceeded(market B 0x093bd94086b08a013c96dc0776ebf663e9300e742a2c14479211cc35da6c3439) ... No payment made.`
+
+The sitting starts at about A 5 / B 5 and ends there: take 1 moves 4 USDC from A to B (about
+A 1 / B 9), take 2 moves nothing, take 3 moves 4 USDC from B back to A. Interest accrues in between,
+so the last digits drift upward.
+
+Each `check` and the `execute` after it are one line joined by `&&`: the gate accepts a verdict for
+60 blocks, and in take 2 a stale verdict would revert `VerdictTooOld` before the gate ever reaches
+`Refuted`.
+
+Rehearse any take first by adding `--dry-run` to its `check`: the claims and the preflight are
+printed, nothing is paid.
+
+### Take 1: PASS, A to B
+
+```sh
+cd ~/proof-of-reason
+node scripts/demo-check.ts check && node scripts/demo-check.ts execute
+node scripts/demo-check.ts receipt --save .demo/receipt-pass.json
+```
+
+The claims are stated from what was read: market B's supply APY to four decimals within 0.1 point,
+and a liquidity floor at 90 percent of the worst block. Verdict PASS, registry response 100.
+`execute` moves 4 USDC: the vault goes to about A 1 / B 9.
+
+### Take 2: FAIL, B to A, with a false rate
+
+```sh
+node scripts/demo-check.ts check --from B --claim-false && node scripts/demo-check.ts execute --simulate
+node scripts/demo-check.ts receipt --save .demo/receipt-fail.json
+```
+
+The claims are about market A, the destination. `--claim-false` states its rate at the observed
+median plus 5.0 percentage points. A rate claim is TRUE only when |observed - claimed| is within
+its tolerance (`engine/src/compare.ts` line 45, 0.1 point here), so it is FALSE, and any FALSE claim
+is FAIL (`engine/src/verdict.ts` lines 62 and 63). Verdict FAIL, registry response 0. The liquidity
+claim still holds; the receipt lists the rate alone under `failing`, with what was observed.
+
+`execute --simulate` asks the gate, without sending, and prints `the gate reverts: Refuted(...)`
+with this check's intent hash and receipt hash: the check at line 191 of the deployed
+`contracts/src/ReasonGate.sol` (HEAD). The vault stays at about A 1 / B 9.
+
+### Take 3: WAIT, B to A, liquidity left out, owner override
+
+```sh
+node scripts/demo-check.ts check --from B --omit liquidity && node scripts/demo-check.ts execute --owner-sig
+node scripts/demo-check.ts receipt --save .demo/receipt-wait.json
+```
+
+`--omit liquidity` sends the rate claim alone. The mandate requires rate and liquidity, a required
+kind with no claim is missing (`engine/src/verdict.ts` line 43), and a missing kind with nothing
+false is WAIT (lines 64 and 65). Verdict WAIT, registry response 50, `missing kinds: liquidity`.
+
+`execute --owner-sig` signs the Override as the gate owner and presents it with the verdict. The
+gate recomputes the digest (line 193), checks it against `owner()` (line 194) and forwards the call.
+`Executed` carries `ownerOverride = true`. The vault goes back to about A 5 / B 5.
+
+### What the sitting costs
+
+| | |
+| --- | --- |
+| Checks | 3 at 0.10 USDC each, 0.30 USDC, paid over x402 by the agent |
+| PAY_TO 0xA6Ad9B6e390979c8e4BA9c7Eb7cFd701dE1F9275 | holds 0.40 USDC before (the first receipt and the 29 Sep rehearsal), 0.70 USDC after |
+| Agent 0x876a294aB4D313798EA44fFdCEC37EA741D792AF | holds 1.60 USDC and 1.950124 MON before: 1.30 USDC after, and gas for two `execute` transactions |
+| Preflight and `execute --simulate` | free: `eth_call` |
+| Owner | signs one EIP-712 message, sends nothing, spends nothing |
+
+## Rehearsal, 29 Sep 2026
+
+Three real checks by the demo agent 0x876a294aB4D313798EA44fFdCEC37EA741D792AF on the gate above,
+each moving 5.000000 USDC, before the 4 USDC default and the preflight existed:
+
+| Take | Intent | Verdict | Registry response |
+| --- | --- | --- | --- |
+| PASS | 0x2aa4c0dae030b5f663ea07df225b39187bc7c756f78e430ebb6a289e73fef385 | PASS, block 109163748 | 100 |
+| FAIL | 0xafe36d676c07fea51f39689d4c0fb4cedd11b52fe9142b85d57dafea59a86e1b | FAIL, block 109163781 | 0 |
+| WAIT | 0x9c32eded06a5a5ba4b2499ff5be71e5c1937b6964117f9e6be6bc0b6d71e3bc0 | WAIT, block 109163813, missing liquidity | 50 |
+
+The verdicts were right. The PASS and WAIT executions were blocked by the vault's own supply cap,
+`SupplyCapExceeded`, not by the gate: 5 USDC did not fit under the 10 USDC cap of the destination
+market. These three checks are not used in the video and do not count as usage.
 
 ## Before the demo
 
@@ -112,7 +239,9 @@ Three things are worth pointing at while it runs:
 
 ## Files and keys
 
-`contracts/.env.deploy` provides `RPC_URL` and, for `seed` only, `PRIVATE_KEY`.
+`contracts/.env.deploy` provides `RPC_URL` and, for `seed` and `execute --owner-sig` only,
+`PRIVATE_KEY`. `RPC_URL` set in the environment takes precedence, so a dry run reads no env file:
+`RPC_URL=https://rpc.monad.xyz node scripts/demo-check.ts check --dry-run`.
 `contracts/.env.agent` provides `AGENT_KEY`, read by `check` and `execute` only. Both files are
 gitignored, both are read at run time, and neither value is ever printed: the script names the
 variable and the file when something is missing, never the value. `.demo/` is gitignored.
