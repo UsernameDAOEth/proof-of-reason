@@ -1,0 +1,109 @@
+{
+  "_source": "The chain facts, in one place. README.md's Live on Monad table is generated from this file by scripts/gen-readme.ts, and site/public/index.html is held against it by scripts/test/readme.test.ts, so the page and the README cannot drift apart. Every address here was read on chain before first publication (docs/SITE.md). The first receipt is held against vid/receipts/pass.json, the document the API actually serves.",
+  "repo": "https://github.com/UsernameDAOEth/proof-of-reason",
+  "chain": {
+    "name": "Monad mainnet",
+    "id": 143,
+    "caip2": "eip155:143",
+    "explorer": "https://monadvision.com"
+  },
+  "contracts": [
+    {
+      "what": "Vault",
+      "address": "0x28900B0B2DDA5d2d61cDF17BE8b7091206a04Bf9"
+    },
+    {
+      "what": "Gate",
+      "address": "0x8fF582f268aB8E2148B548Aa061c5273bC383120"
+    },
+    {
+      "what": "Validation registry",
+      "address": "0x8e2b835d43bB93cE46CcA9994f41596dB162007C"
+    },
+    {
+      "what": "Validator",
+      "address": "0xEC37691732204714DDfd024B67F1B7abfcF3FC9E"
+    },
+    {
+      "what": "Identity registry",
+      "address": "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432"
+    }
+  ],
+  "agents": {
+    "validator": "10259",
+    "demo": "10258"
+  },
+  "api": {
+    "url": "https://api.proofofreason.com",
+    "terms": "x402, 0.10 USDC per check, exact scheme"
+  },
+  "firstReceipt": {
+    "date": "25 Sep 2026",
+    "outcome": "PASS",
+    "block": "107991649",
+    "intentHash": "0x45ab90694af77667d82c0b3047611c4ac707b3e3f94cda5cd67aad63735298e3",
+    "receiptHash": "0x3cb1764a104bc52f1db95b9f6572de13d3a352ee5ec4213a2050e64a454b1ea7",
+    "registryTx": "0x4eb4422544c1120c5133653d06469ab7ef44574eeaf0ecd4bcf1134311740240",
+    "executionTx": "0xfcc50dadc9635a268ab55c5065ad7d4226b4d222180280e604f6834d72e6d3af",
+    "blockTimestamp": 1790369096,
+    "blockTime": "2026-09-25T20:44:56Z",
+    "executionBlock": "107991669",
+    "executionTimestamp": 1790369103,
+    "executionTime": "2026-09-25T20:45:03Z",
+    "_timing": "Read once from https://rpc.monad.xyz on 2026-09-29: the block of executionTx from its receipt, and the timestamp of both blocks. The page derives the gap from these four values (scripts/gen-site.ts) and scripts/test/readme.test.ts holds the sentence to them. Nobody types the delay."
+  },
+  "prereg": {
+    "sha256": "5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4",
+    "gates": [
+      {
+        "date": "13 Oct",
+        "what": "first read"
+      },
+      {
+        "date": "3 Nov",
+        "what": "second read"
+      },
+      {
+        "date": "15 Dec",
+        "what": "fit gate"
+      }
+    ],
+    "firstCommit": {
+      "hash": "073cceb968c63e94b575326a85d65e1f84f6de4f",
+      "date": "2026-09-18T10:25:26-07:00"
+    },
+    "publicPost": {
+      "url": "https://x.com/Djzs_ai/status/2103540228128694716",
+      "date": "2026-09-25"
+    },
+    "_dates": "docs/PREREG.md states its own date on its second line (Registered: 2026-09-17); gen-site.ts reads it from the file. firstCommit is read from git (the root commit, author date) and held to git by scripts/test/readme.test.ts. publicPost is the first public timestamp of the sha256: nothing was published on 17 September."
+  },
+  "failures": {
+    "_source": "The figures on the page under \"The failure it is built for\". Each is quoted verbatim, from the article itself, in docs/SOURCES.md; scripts/test/readme.test.ts fails if a figure here is not in the quoted line there. scripts/gen-site.ts renders the paragraph from these values.",
+    "months": 14,
+    "to": "March 2026",
+    "atLeast": 4,
+    "usual": {
+      "when": "January 2025",
+      "hardSetUsd": "1",
+      "floorUsd": "0.87"
+    },
+    "stream": {
+      "when": "November 2025",
+      "atRiskMillionsLow": 285,
+      "atRiskMillionsHigh": 700,
+      "otherOutletFactor": 10
+    },
+    "moonwell": {
+      "when": "October and November 2025",
+      "failures": 2,
+      "badDebtOverMillions": 5
+    },
+    "resolv": {
+      "when": "March 2026",
+      "markedUsd": "1.13",
+      "tradedUsd": "0.63",
+      "badDebtOverMillions": 10
+    }
+  }
+}

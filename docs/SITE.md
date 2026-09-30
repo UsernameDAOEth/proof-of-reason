@@ -51,8 +51,15 @@ curl -s -o /dev/null -w '%{http_code}\n' https://proofofreason.com/style.css
 curl -s -o /dev/null -w '%{http_code}\n' https://proofofreason.com/nothing-here
 ```
 
-Expected: `301 https://proofofreason.com/` (Always Use HTTPS), `0` script tags, a body under 12000
+Expected: `301 https://proofofreason.com/` (Always Use HTTPS), `0` script tags, a body under 16000
 bytes, `200` for the stylesheet, and `404` for anything else.
+
+The body limit was 12000 bytes until 2026-09-27, when the page gained the plain-language half that
+sits above the "For developers" line. The page is 13.4 KB at that rewrite. It was 15000 until
+2026-09-29, when the failures paragraph was rewritten with every case named and dated and its source
+line recorded, taking the page to 15.4 KB. The number is no longer only documented here:
+`site/test/site.test.ts` asserts `index.html` is under the same 16000, so this line and the suite
+cannot disagree. Raising it again means editing both.
 
 ## When a fact on the page changes
 

@@ -36,6 +36,45 @@ const FIRST = {
 const receiptPath = join(siteDir, '..', 'vid', 'receipts', 'pass.json')
 const hasReceipt = existsSync(receiptPath)
 
+/** Everything above this heading is written for someone who does not work in this field. */
+const DEVELOPER_LINE = '<h2>For developers</h2>'
+
+/**
+ * Jargon the plain half may not use. Each of these has a plain replacement in use above the line:
+ * validator to "the check", mandate to "the rules the owner set", registry to "the filing on the
+ * chain", verdict to "yes" and "no", premise to "reason", vault to "pool".
+ */
+const JARGON = [
+  'validator',
+  'allocator',
+  'mandate',
+  'registry',
+  'receipt hash',
+  'premise',
+  'verdict',
+  'ERC-8004',
+  'x402',
+  'Morpho',
+  'vault',
+  'calldata',
+  'EIP-712',
+]
+
+/** The two terms in JARGON that this page has never used, above the line or below it. */
+const NEVER_ON_THIS_PAGE = ['receipt hash', 'EIP-712']
+
+/** The body above the divider, and the same again with the tags taken out. */
+function plainHalf(): { markup: string; text: string } {
+  const start = html.indexOf('<body>')
+  const end = html.indexOf(DEVELOPER_LINE)
+  const markup = html.slice(start, end)
+  const text = markup.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+  return { markup, text }
+}
+
+/** The documented body limit in docs/SITE.md, which this suite holds the page to. */
+const BODY_LIMIT = 16000
+
 /** The token block copied from https://djzs.ai/style.css. */
 const TOKENS = {
   canvas: '#0A0A0A',
@@ -104,7 +143,7 @@ describe('every fact is on the page, verbatim', () => {
   })
 
   it('states who it is for, and that the validator is not paid to say yes', () => {
-    expect(html).toContain('<h2>Who it is for</h2>')
+    expect(html).toContain('<h2>Who it is for and what it costs</h2>')
     expect(html).toContain('For principals who have to answer for an automated allocator:')
     expect(html).toContain('vault curators evidencing reallocations to depositors')
     expect(html).toContain('insurers pricing an AI-allocated vault')
@@ -132,7 +171,9 @@ describe('every fact is on the page, verbatim', () => {
     expect(html).toContain('<h2>Why Monad</h2>')
     expect(html).toContain('A verdict is only useful if execution follows before the state it checked moves.')
     expect(html).toContain("The gate accepts a verdict for 60 blocks, about 18 seconds at Monad's 0.30 s block time.")
-    expect(html).toContain('The first check to execution took 11 blocks, 3.3 seconds.')
+    // Rendered from facts.json by scripts/gen-site.ts; scripts/test/readme.test.ts holds the numbers.
+    expect(html).toContain('The first check to execution took 20 blocks, 7 seconds by block timestamps.')
+    expect(html).not.toContain('11 blocks, 3.3 seconds')
     expect(html).toContain('The same 60-block bound on Ethereum L1 is 12 minutes.')
   })
 
@@ -143,6 +184,11 @@ describe('every fact is on the page, verbatim', () => {
     )
     expect(html).toContain('The check judges premises and mandate, not whether the decision is wise.')
     expect(html).toContain("The registry is interim until Monad's canonical ERC-8004 validation registry ships.")
+    expect(html).toContain(
+      'The 30-day audit reads MetaMorpho V1 vaults today. Morpho Vault V2, used by some curators, is not supported yet.',
+    )
+    // Below the line, where the developer names belong.
+    expect(html.indexOf('The 30-day audit reads MetaMorpho V1 vaults today.')).toBeGreaterThan(html.indexOf(DEVELOPER_LINE))
   })
 
   it('states the doctrine and the principle', () => {
@@ -184,7 +230,15 @@ describe('every fact is on the page, verbatim', () => {
     expect(html).toContain('13 Oct')
     expect(html).toContain('3 Nov')
     expect(html).toContain('15 Dec')
-    expect(html).toContain('Results publish whichever way they fall.')
+    // The promise is stated once, quoted from the file; the paraphrase that repeated it is gone.
+    expect(html.match(/whichever way they fall/g)).toHaveLength(1)
+    expect(html).not.toContain('<p>Results publish whichever way they fall.</p>')
+  })
+
+  it('does not claim the pre-registration was published on the day it was written', () => {
+    expect(html).not.toContain('published on 17 September')
+    expect(html).toContain('was posted publicly on 25 September 2026: <a href="https://x.com/Djzs_ai/status/2103540228128694716">the post</a>.')
+    expect(html).toContain('https://github.com/UsernameDAOEth/proof-of-reason/commit/073cceb968c63e94b575326a85d65e1f84f6de4f')
   })
 
   it('carries the record links, including when the indexer lands', () => {
@@ -238,13 +292,23 @@ describe('every fact is on the page, verbatim', () => {
     // Heading markup, not bare text: "Live on Monad" also appears in the meta description.
     const order = [
       '<h1>Proof of Reason</h1>',
-      '<h2>Who it is for</h2>',
+      '<h2>What it is</h2>',
+      '<h2>Why a manager wants it</h2>',
+      '<h2>Why a customer or an insurer wants it</h2>',
+      '<h2>What it checks, every time</h2>',
+      '<h2>What it does not do</h2>',
+      '<h2>The first check, 25 September 2026</h2>',
+      '<h2>The failure it is built for</h2>',
+      '<h2>Anyone can build the check. Nobody can be their own witness.</h2>',
+      '<h2>Who it is for and what it costs</h2>',
+      '<h2>Pre-registered, before any code</h2>',
+      '<h2>Contact</h2>',
+      DEVELOPER_LINE,
       '<h2>Doctrine</h2>',
       '<h2>How it works</h2>',
       '<h2>What it catches</h2>',
       '<h2>Live on Monad</h2>',
       '<h2>Why Monad</h2>',
-      '<h2>Pre-registered, before any code</h2>',
       '<h2>Record</h2>',
       '<h2>Known limits</h2>',
       'Running an allocator? Write a mandate with us:',
@@ -252,6 +316,122 @@ describe('every fact is on the page, verbatim', () => {
     ].map((marker) => html.indexOf(marker))
     expect(order.every((index) => index >= 0)).toBe(true)
     expect([...order].sort((a, b) => a - b)).toEqual(order)
+  })
+})
+
+describe('plain words above the line', () => {
+  it('divides the page once, and the plain half comes first', () => {
+    expect((html.match(new RegExp(DEVELOPER_LINE, 'g')) ?? []).length).toBe(1)
+    expect(html.indexOf(DEVELOPER_LINE)).toBeGreaterThan(html.indexOf('<h1>Proof of Reason</h1>'))
+    expect(html.indexOf(DEVELOPER_LINE)).toBeLessThan(html.indexOf('<h2>Doctrine</h2>'))
+  })
+
+  it('uses none of the jargon above it, in the text or in the markup', () => {
+    const { markup, text } = plainHalf()
+    expect(text.length).toBeGreaterThan(1000)
+    for (const word of JARGON) {
+      expect(text.toLowerCase(), `"${word}" in the plain text`).not.toContain(word.toLowerCase())
+      expect(markup.toLowerCase(), `"${word}" in the plain markup`).not.toContain(word.toLowerCase())
+    }
+  })
+
+  it('still names the jargon below it, so nothing was lost by avoiding it', () => {
+    const developerHalf = html.slice(html.indexOf(DEVELOPER_LINE))
+    // Eleven of the thirteen are terms this page really does use: they moved below the line, they
+    // did not go away. The other two this page has never used in either half, so requiring them
+    // below would be requiring something that was never here. Both live in README.md instead,
+    // where the verify steps need them.
+    for (const word of JARGON.filter((w) => !NEVER_ON_THIS_PAGE.includes(w))) {
+      expect(developerHalf.toLowerCase(), word).toContain(word.toLowerCase())
+    }
+    for (const word of NEVER_ON_THIS_PAGE) {
+      expect(html.toLowerCase(), word).not.toContain(word.toLowerCase())
+    }
+  })
+
+  it('leads with the subtitle, not the developer line', () => {
+    expect(html).toContain('Reserves prove the money is there. Reason proves why it moved.')
+    expect(html).toContain(
+      '<meta name="description" content="Reserves prove the money is there. Reason proves why it moved. Live on Monad mainnet.">',
+    )
+  })
+
+  it('carries each plain block, word for word', () => {
+    const { text } = plainHalf()
+    const blocks = [
+      'Some companies manage other people\'s money in shared pools, and they are starting to let AI decide where that money goes.',
+      'Because AI gets things wrong, gets tricked, and cannot be cross-examined.',
+      'A bank publishes proof that deposits exist. This proves why deposits moved.',
+      'Three yeses, the money moves. One no, it does not, and the refusal is on the record too.',
+      'It does not judge whether the move was a good idea.',
+      'Our own test AI asked to move 5 dollars between two lending markets.',
+      'This was our own AI and does not count as a customer.',
+      'In the fourteen months to March 2026, reporting counts at least four cases of the same failure: a lending market trusted a price that was hard-set or had stopped updating, while the real market price had moved. Usual, January 2025: a token hard-set at one dollar; when its redemption floor was cut to 87 cents, lenders were locked in. Stream, November 2025: the price stopped updating as its token collapsed, and an estimated 285 to 700 million dollars was at risk; another outlet reported ten times that. Moonwell, October and November 2025: two price failures, over 5 million dollars of bad debt. Resolv, March 2026: a token marked at 1.13 dollars while it traded near 0.63; one lender absorbed over 10 million dollars of bad debt in a single day.',
+      'Today the check reads rates and the cash available to withdraw. Reading the price a lender uses for its collateral is not built yet.',
+      'Anyone can build the check. Nobody can be their own witness.',
+      'The check earns the same whether the answer is yes or no, so it is never paid to say yes.',
+      'Managing pooled money with an AI? Write to dj@proofofreason.com',
+    ]
+    for (const block of blocks) expect(text, block).toContain(block)
+    // Unverified, and a permissions failure rather than a false reason: kept in docs/SOURCES.md
+    // under "not used on the page", never on the page.
+    expect(html).not.toContain('In May 2026')
+    // Claims the sources do not carry, removed with the old paragraph.
+    for (const gone of ['every move was allowed', 'the one-dollar price underneath them', 'managed pools', 'lost money', 'What this would have caught']) {
+      expect(html, gone).not.toContain(gone)
+    }
+    expect(html).not.toContain('174 thousand')
+    expect(plainHalf().markup).toContain('<a href="mailto:dj@proofofreason.com">')
+  })
+
+  it('cites the two editions it quotes, the original they translate, and the file that holds the lines', () => {
+    for (const host of ['kucoin.com', 'thedefiant.io', 'theblockbeats.news']) {
+      expect(html, host).toContain(host)
+    }
+    // AMBCrypto carries neither page figure for Moonwell, so the page does not cite it.
+    expect(html).not.toContain('ambcrypto.com')
+    expect(html).toContain('docs/SOURCES.md')
+    expect(existsSync(join(siteDir, '..', 'docs', 'SOURCES.md'))).toBe(true)
+  })
+})
+
+describe('the pre-registration block quotes the file it names', () => {
+  const prereg = readFileSync(join(siteDir, '..', 'docs', 'PREREG.md'), 'utf8')
+
+  it('quotes the terms verbatim from docs/PREREG.md', () => {
+    const terms = 'Results publish at each gate date whichever way they fall, including a kill.'
+    expect(prereg, 'the quoted terms are no longer in PREREG.md').toContain(terms)
+    expect(html, 'the page no longer quotes them').toContain(terms)
+  })
+
+  it('quotes the 15 December fit gate verbatim below the line, and says it plainly above it', () => {
+    const line = prereg.split('\n').find((l) => l.startsWith('2026-12-15: fit gate.'))
+    expect(line, 'the fit gate line is no longer in PREREG.md').toBeDefined()
+    expect(html).toContain(`<q>${line}</q>`)
+    expect(html.indexOf(line!), 'the technical quote belongs under For developers').toBeGreaterThan(html.indexOf(DEVELOPER_LINE))
+    const plain =
+      '<dd>In plain words: by 15 December 2026, at least 1 in 20 of the moves we audit must have rested on a reason that was false when it was made, two trials must have been paid for, any amount above zero, and one manager, insurer or listing platform must have committed in writing to require the check. If any of that is missing, the hosted check is not built, and the code stays public.</dd>'
+    expect(html).toContain(plain)
+    expect(html.indexOf(plain)).toBeGreaterThan(html.indexOf('<li>15 Dec 2026.</li>'))
+    expect(html.indexOf(plain)).toBeLessThan(html.indexOf(DEVELOPER_LINE))
+    // Each clause stands on a line of the file: A1's pass threshold, what a paid pilot is, and
+    // what the written requirer is asked to commit to.
+    expect(prereg).toContain('Pass: at least 1 action in 20 carries a false premise at the time it was made.')
+    expect(prereg).toContain('- A paid pilot is money received, any amount above zero, invoiced by DJZS AI, LLC.')
+    expect(prereg).toContain('Test: ask every allocator, curator, insurer, and listing platform contacted whether they would make it a condition.')
+  })
+
+  it('states the same three gate dates the file sets', () => {
+    const gates = prereg.slice(prereg.indexOf('## Gates'), prereg.indexOf('## Counting rules'))
+    const iso = [...gates.matchAll(/^(\d{4}-\d{2}-\d{2}):/gm)].map((m) => m[1]!)
+    expect(iso).toEqual(['2026-10-13', '2026-11-03', '2026-12-15'])
+    for (const onPage of ['13 Oct 2026', '3 Nov 2026', '15 Dec 2026']) {
+      expect(html, onPage).toContain(onPage)
+    }
+  })
+
+  it('carries the hash of the file it quotes', () => {
+    expect(html).toContain(PREREG_SHA256)
   })
 })
 
@@ -300,7 +480,7 @@ describe('brand law', () => {
 describe('readable with CSS disabled', () => {
   it('is one document outline, not a layout', () => {
     expect((html.match(/<h1\b/g) ?? []).length).toBe(1)
-    expect((html.match(/<h2\b/g) ?? []).length).toBe(9)
+    expect((html.match(/<h2\b/g) ?? []).length).toBe(19)
     // The table is a table, with headers a screen reader can use.
     expect(html).toContain('<caption>')
     expect(html).toContain('<thead>')
@@ -321,6 +501,13 @@ describe('readable with CSS disabled', () => {
 })
 
 describe('weight', () => {
+  it('keeps index.html under the body limit docs/SITE.md documents', () => {
+    const size = statSync(join(publicDir, 'index.html')).size
+    expect(size, `index.html is ${size} bytes`).toBeLessThan(BODY_LIMIT)
+    // The number in the doc and the number here are the same number, on purpose.
+    expect(siteDoc, 'docs/SITE.md documents a different limit').toContain(`under ${BODY_LIMIT}`)
+  })
+
   it('serves the whole site in well under 30 KB', () => {
     const files = allFiles(publicDir)
     const total = files.reduce((sum, file) => sum + statSync(file).size, 0)

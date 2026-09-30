@@ -14,3 +14,6 @@ worker/.wrangler/
 
 # demo-check.ts persists the signed verdict between subcommands. Never committed.
 .demo/
+
+# Discovery-call notes and anything else that is not ours to publish.
+docs/private/

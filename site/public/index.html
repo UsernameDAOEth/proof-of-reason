@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Proof of Reason</title>
-<meta name="description" content="The vault only moves when the agent's stated reason is true on-chain, in mandate, and complete. Live on Monad mainnet.">
+<meta name="description" content="Reserves prove the money is there. Reason proves why it moved. Live on Monad mainnet.">
 <meta name="color-scheme" content="dark">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,15 +17,101 @@
 <header class="site">
 <div class="wrap">
 <h1>Proof of Reason</h1>
-<p class="lede">The vault only moves when the agent's stated reason is true on-chain, in mandate, and complete.</p>
+<p class="lede">Reserves prove the money is there. Reason proves why it moved.</p>
 </div>
 </header>
 
 <main class="wrap">
 
-<section id="audience">
-<h2>Who it is for</h2>
+<section id="what">
+<h2>What it is</h2>
+<p>Some companies manage other people's money in shared pools, and they are starting to let AI decide where that money goes. Before the AI moves any of it, Proof of Reason makes it explain why, checks whether the explanation is actually true right now, and only lets the money move if it is. Every check is written down in public so anyone can see it later.</p>
+</section>
+
+<section id="manager">
+<h2>Why a manager wants it</h2>
+<p>Because AI gets things wrong, gets tricked, and cannot be cross-examined. If the AI says this place pays 12 percent and the money can come back any time, and that is false, the money does not move. And when a customer asks why their money went there, the manager can show a record written by someone independent, not their own notes.</p>
+</section>
+
+<section id="customer">
+<h2>Why a customer or an insurer wants it</h2>
+<p>They can see why the money moved without having to trust the manager or the AI. A bank publishes proof that deposits exist. This proves why deposits moved.</p>
+</section>
+
+<section id="checks">
+<h2>What it checks, every time</h2>
+<p>Three questions. Is what the AI said true? Is the move something the owner allowed? Did the AI give every reason it is required to give? Three yeses, the money moves. One no, it does not, and the refusal is on the record too.</p>
+</section>
+
+<section id="notdo">
+<h2>What it does not do</h2>
+<p class="not">It does not judge whether the move was a good idea. It judges whether the reasons for it were true and allowed. That is the whole job.</p>
+</section>
+
+<section id="first">
+<h2>The first check, 25 September 2026</h2>
+<p>Our own test AI asked to move 5 dollars between two lending markets. It gave two reasons. Both were true at that moment. The move was allowed. <!-- BEGIN GENERATED delay: node scripts/gen-site.ts -->The money moved seven seconds later, 20 blocks on the chain.<!-- END GENERATED delay --> This was our own AI and does not count as a customer.</p>
+<!-- BEGIN GENERATED first-check: node scripts/gen-site.ts -->
+<ul class="plain">
+<li>It said this market pays 9.5558 percent. The market read 9.5558 percent. True.</li>
+<li>It said at least 1,639,330.385558 dollars could be taken out on demand. The market read 1,821,478.206176 dollars. True.</li>
+<li>Allowed: both markets it touched were on the list the owner had approved.</li>
+<li>Complete: both kinds of reason it was required to give were there.</li>
+<li>Result: three yeses, at block 107991649. The money moved seven seconds later, 20 blocks on the chain.</li>
+</ul>
+<p>See it yourself: <a href="https://api.proofofreason.com/receipts/0x45ab90694af77667d82c0b3047611c4ac707b3e3f94cda5cd67aad63735298e3">the public record</a>, <a href="https://monadvision.com/tx/0x4eb4422544c1120c5133653d06469ab7ef44574eeaf0ecd4bcf1134311740240">the filing on the chain</a>, <a href="https://monadvision.com/tx/0xfcc50dadc9635a268ab55c5065ad7d4226b4d222180280e604f6834d72e6d3af">the money moving</a>.</p>
+<!-- END GENERATED first-check -->
+</section>
+
+<section id="wouldhave">
+<h2>The failure it is built for</h2>
+<p><!-- BEGIN GENERATED failures: node scripts/gen-site.ts -->In the fourteen months to March 2026, reporting counts at least four cases of the same failure: a lending market trusted a price that was hard-set or had stopped updating, while the real market price had moved. Usual, January 2025: a token hard-set at one dollar; when its redemption floor was cut to 87 cents, lenders were locked in. Stream, November 2025: the price stopped updating as its token collapsed, and an estimated 285 to 700 million dollars was at risk; another outlet reported ten times that. Moonwell, October and November 2025: two price failures, over 5 million dollars of bad debt. Resolv, March 2026: a token marked at 1.13 dollars while it traded near 0.63; one lender absorbed over 10 million dollars of bad debt in a single day.<!-- END GENERATED failures --></p>
+<p>Today the check reads rates and the cash available to withdraw. Reading the price a lender uses for its collateral is not built yet.</p>
+<p class="muted">Sources: <a href="https://www.kucoin.com/news/flash/defi-hardcoded-oracle-vulnerability-repeats-for-fourth-time-in-14-months">KuCoin</a> and <a href="https://en.theblockbeats.news/news/61670">BlockBeats</a>, both translating <a href="https://thedefiant.io/news/hacks/defi-has-seen-resolv-s-usd25m-usr-exploit-many-times-before">The Defiant</a>. Every figure, the line it is quoted from, and one disagreement between them are in <a href="https://github.com/UsernameDAOEth/proof-of-reason/blob/main/docs/SOURCES.md">docs/SOURCES.md</a>.</p>
+</section>
+
+<section id="witness">
+<h2>Anyone can build the check. Nobody can be their own witness.</h2>
+</section>
+
+<section id="cost">
+<h2>Who it is for and what it costs</h2>
+<p>Companies that manage pooled money pay a fixed fee, quoted per pool, for three things: the rules written down, the last 30 days of moves audited read-only, and then the check running in front of their AI.</p>
+<p>Insurers and listing platforms: make this check a condition of cover or of listing. We show you what it would have caught.</p>
+<p>The AI itself pays 0.10 USDC per check. The check earns the same whether the answer is yes or no, so it is never paid to say yes.</p>
+</section>
+
+<section id="prereg">
+<h2>Pre-registered, before any code</h2>
+<!-- BEGIN GENERATED prereg: node scripts/gen-site.ts --><p>The questions, the numbers that would count as a pass, and the numbers that would kill it were all written down before any code. The file says it was registered on 17 September 2026, and it is the first commit in the repository, <a href="https://github.com/UsernameDAOEth/proof-of-reason/commit/073cceb968c63e94b575326a85d65e1f84f6de4f"><code>073cceb</code></a>, dated 18 September 2026. Its fingerprint, the sha256 below, was posted publicly on 25 September 2026: <a href="https://x.com/Djzs_ai/status/2103540228128694716">the post</a>.</p><!-- END GENERATED prereg -->
+<dl class="facts">
+<dt>sha256 of docs/PREREG.md</dt>
+<dd><code>5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4</code></dd>
+<dt>The three dates</dt>
+<dd>
+<ul class="dates">
+<li>13 Oct 2026.</li>
+<li>3 Nov 2026.</li>
+<li>15 Dec 2026.</li>
+</ul>
+</dd>
+<dt>The fit gate</dt>
+<dd>In plain words: by 15 December 2026, at least 1 in 20 of the moves we audit must have rested on a reason that was false when it was made, two trials must have been paid for, any amount above zero, and one manager, insurer or listing platform must have committed in writing to require the check. If any of that is missing, the hosted check is not built, and the code stays public.</dd>
+<dt>The terms, quoted from that file</dt>
+<dd>Results publish at each gate date whichever way they fall, including a kill.</dd>
+</dl>
+</section>
+
+<section id="contact">
+<h2>Contact</h2>
+<p>Managing pooled money with an AI? Write to <a href="mailto:dj@proofofreason.com">dj@proofofreason.com</a>.</p>
+</section>
+
+<section id="developers">
+<h2>For developers</h2>
+<p>The vault only moves when the agent's stated reason is true on-chain, in mandate, and complete.</p>
 <p>For principals who have to answer for an automated allocator: vault curators evidencing reallocations to depositors, insurers pricing an AI-allocated vault, platforms deciding what to list.</p>
+<p>The fit gate, verbatim from docs/PREREG.md: <q>2026-12-15: fit gate. Pass requires A1 pass, 2 paid pilots, and 1 written requirer. A miss means no hosted validator is built; the code stays open source as consulting collateral.</q></p>
 <p>The agent pays 0.10 USDC per check over x402. The validator earns the same on <span class="pass">PASS</span>, <span class="wait">WAIT</span> and <span class="fail">FAIL</span>, so it is never paid to say yes.</p>
 </section>
 
@@ -103,24 +189,8 @@
 
 <section id="why-monad">
 <h2>Why Monad</h2>
-<p>A verdict is only useful if execution follows before the state it checked moves. The gate accepts a verdict for 60 blocks, about 18 seconds at Monad's 0.30 s block time. The first check to execution took 11 blocks, 3.3 seconds. The same 60-block bound on Ethereum L1 is 12 minutes.</p>
-</section>
-
-<section id="prereg">
-<h2>Pre-registered, before any code</h2>
-<dl class="facts">
-<dt>sha256 of docs/PREREG.md</dt>
-<dd><code>5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4</code></dd>
-<dt>Gate dates</dt>
-<dd>
-<ul class="dates">
-<li>13 Oct: first read.</li>
-<li>3 Nov: second read.</li>
-<li>15 Dec: fit gate.</li>
-</ul>
-</dd>
-</dl>
-<p>Results publish whichever way they fall.</p>
+<p>A verdict is only useful if execution follows before the state it checked moves. The gate accepts a verdict for 60 blocks, about 18 seconds at Monad's 0.30 s block time. <!-- BEGIN GENERATED delay-chain: node scripts/gen-site.ts -->The first check to execution took 20 blocks, 7 seconds by block timestamps.<!-- END GENERATED delay-chain --> The same 60-block bound on Ethereum L1 is 12 minutes.</p>
+<p>Monad charges a transaction its gas limit, not its gas used, so a refused call costs the same as an executed one. The gate exposes a free read, previewPremises, that returns the same chain state the gate will re-check, and the agent asks it before spending a limit. Monad prices the first read of a storage page and warms the rest, and a Morpho market's state sits on one page, so re-asserting a utilization or liquidity premise inside the executing transaction is one cheap read rather than a reason to trust the validator.</p>
 </section>
 
 <section id="record">
@@ -149,8 +219,11 @@ How the issuer handles being wrong:
 <h2>Known limits</h2>
 <ul class="plain">
 <li>One validator key today; every verdict is on the registry and re-checkable by anyone, and a second validator is the roadmap.</li>
+<li>What the gate still trusts the validator for: the observations the chain cannot re-read, rates above all, at the pinned block, and that the signed tally counts what the receipt shows. Both are checkable afterwards against an archive node. Utilization, liquidity and the Kuru book are re-read by the chain at execution, and the rule that turns counts into an outcome is compiled into the gate.</li>
+<li>The validator sees an agent's calldata and claims before the chain does. A dishonest validator could trade on that. Today the answer is a policy, not a mechanism: no copy of non-PASS intents beyond their receipts, and no trading on gate inputs. A second validator or an enclave would replace the policy.</li>
 <li>The check judges premises and mandate, not whether the decision is wise.</li>
 <li>The registry is interim until Monad's canonical ERC-8004 validation registry ships.</li>
+<li>The 30-day audit reads MetaMorpho V1 vaults today. Morpho Vault V2, used by some curators, is not supported yet.</li>
 </ul>
 </section>
 
