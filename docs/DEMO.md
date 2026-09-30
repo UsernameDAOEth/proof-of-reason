@@ -227,6 +227,23 @@ The verdicts were right. The PASS and WAIT executions were blocked by the vault'
 `SupplyCapExceeded`, not by the gate: 5 USDC did not fit under the 10 USDC cap of the destination
 market. These three checks are not used in the video and do not count as usage.
 
+## Recording, 29 Sep 2026
+
+The three takes recorded for the video, on the v1 gate:
+
+| Take | Intent | Registry response | On chain |
+| --- | --- | --- | --- |
+| PASS | 0xbc61bf14bdda5ccf34163a29e5b9cb59eb8fd9cfd117e2f837c56c5a71258917 | 100 | execute tx 0xf6160dba44ac196f333f21187c0213dc000be1b63ce70c6514e8ee9ebef048e9 in block 109188854 |
+| FAIL | 0xaee2253b7c112971435c111c97c20ddf2d2c863079ddf662e0ddb8fc7ace0b9b | 0 | registry tx 0x7c3b22f90554f789e11f1455cf2c6d5d7c3989f73406590f87baeb609a79da16; execute simulated against the live gate, not sent, gate error `Refuted` |
+| WAIT | 0xfdef4aa1a5f5d840cc453c9c0203903ffbb6cfc9a8e58dc8dccf455565d560ee | 50 | registry tx 0x22e12dde49b5786a1a98893a8d770f47651e647547072f44739adf7a98026790; execute tx 0x363b90a46c6f7578a2df3e88d0a5f718a3d5d437a519a3d51a22ba0a837ecced in block 109193857, owner override |
+
+The FAIL take was recorded with the old wording: `check` printed "the gate accepts this verdict
+until block N" for a FAIL. `check` now prints "the gate will refuse this verdict" for a FAIL, and
+no longer tells you to run execute.
+
+Cost for the sitting: 0.30 USDC, three checks at 0.10 USDC. PAY_TO now holds 0.70 USDC.
+Vault after: A 5.005179 USDC, B 5.004346 USDC.
+
 ## Before the demo
 
 | Check | Command |

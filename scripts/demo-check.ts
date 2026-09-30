@@ -977,8 +977,8 @@ export async function check(options: CheckOptions, deps: CheckDeps = liveCheckDe
   line(`receipt ${receiptUrl}`)
 
   const maxAge = await client.readContract({ address: GATE, abi: gateAbi, functionName: 'maxAgeBlocks' })
-  const deadline = BigInt(response.signed.checkedAtBlock) + BigInt(maxAge)
-  line(`the gate accepts this verdict until block ${deadline}, ${maxAge} blocks after the check`)
+  const gateLines = verdictWindowLines(response.verdict.outcome, BigInt(response.signed.checkedAtBlock), BigInt(maxAge))
+  line(gateLines.gate)
 
   saveCheck({
     savedAt: new Date().toISOString(),
@@ -989,7 +989,22 @@ export async function check(options: CheckOptions, deps: CheckDeps = liveCheckDe
     receiptUrl,
     registryTx: registry?.tx ?? null,
   })
-  line(`saved to .demo/last-check.json. Run execute now: the window is ${maxAge} blocks.`)
+  line(gateLines.saved)
+}
+
+/** What check prints about the gate once the verdict is in. A FAIL is refused whatever the block. */
+export function verdictWindowLines(
+  outcome: SavedCheck['outcome'],
+  checkedAtBlock: bigint,
+  maxAge: bigint,
+): { gate: string; saved: string } {
+  if (outcome === 'FAIL') {
+    return { gate: 'the gate will refuse this verdict', saved: 'saved to .demo/last-check.json.' }
+  }
+  return {
+    gate: `the gate accepts this verdict until block ${checkedAtBlock + maxAge}, ${maxAge} blocks after the check`,
+    saved: `saved to .demo/last-check.json. Run execute now: the window is ${maxAge} blocks.`,
+  }
 }
 
 /** Which verdicts execute will present, and with which flag. Returns the refusal, or null. */

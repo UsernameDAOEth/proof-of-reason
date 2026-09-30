@@ -395,6 +395,7 @@ import {
   parseArgs,
   signOverride,
   simulateExecute,
+  verdictWindowLines,
   writeReceipt,
 } from '../demo-check.ts'
 
@@ -625,6 +626,28 @@ describe('execute --owner-sig', () => {
     expect(executeRefusal('PASS', { ownerSig: false, simulate: false })).toBeNull()
     expect(executeRefusal('PASS', { ownerSig: true, simulate: false })).toMatch(/needs no owner signature/)
     expect(executeRefusal('FAIL', { ownerSig: true, simulate: false })).toMatch(/revert Refuted/)
+  })
+})
+
+describe('what check says about the gate, per verdict', () => {
+  it('PASS: accepted until checkedAtBlock plus maxAge, and execute now', () => {
+    const lines = verdictWindowLines('PASS', 107_991_649n, 60n)
+    expect(lines.gate).toBe('the gate accepts this verdict until block 107991709, 60 blocks after the check')
+    expect(lines.saved).toBe('saved to .demo/last-check.json. Run execute now: the window is 60 blocks.')
+  })
+
+  it('WAIT: the same window wording as PASS', () => {
+    const lines = verdictWindowLines('WAIT', 107_991_649n, 60n)
+    expect(lines.gate).toBe('the gate accepts this verdict until block 107991709, 60 blocks after the check')
+    expect(lines.saved).toBe('saved to .demo/last-check.json. Run execute now: the window is 60 blocks.')
+  })
+
+  it('FAIL: the gate will refuse it, and there is no window and no call to execute', () => {
+    const lines = verdictWindowLines('FAIL', 107_991_649n, 60n)
+    expect(lines.gate).toBe('the gate will refuse this verdict')
+    expect(lines.gate).not.toMatch(/accepts/)
+    expect(lines.saved).toBe('saved to .demo/last-check.json.')
+    expect(lines.saved).not.toMatch(/Run execute now/)
   })
 })
 
