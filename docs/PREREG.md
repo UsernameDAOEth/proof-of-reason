@@ -47,3 +47,16 @@ Kill: any pilot principal disables the gate over false FAILs.
 
 ## Disclosure
 Results publish at each gate date whichever way they fall, including a kill.
+
+## Amendment 1 (2026-10-01): how A1 is counted
+Reason: A1's pass set a rate with no minimum sample, so one false premise in the first audited action would have met it. The text also left open which records count, how many may come from one agent, how agents are chosen, and what a read short of a threshold says. Written before any shadow record was sealed: at commit fe4c32d, shadow/records holds no record and shadow/LEDGER.md reads 0 audited.
+
+A counted action is a located shadow record in which at least one claim was decided TRUE or FALSE. Records where no claim could be decided, and unlocated records, stay in the ledger and are not counted. Within a counted action, a claim that could not be decided counts as not false.
+Pass: at least 60 counted actions, at least 1 in 20 of them with a false premise at the time it was made.
+Kill: fewer than 1 in 100 across at least 200 counted actions.
+No agent supplies more than 6 of the actions counted toward a pass, or 20 toward a kill. An agent's earliest actions are the ones counted.
+An agent's action counts only if it was posted after the agent was listed in shadow/AGENTS.md by a commit. From then on, its publicly explained actions are audited in the order they were posted, none skipped, until 20 of them are counted. Earlier actions may be audited and shown, never counted.
+Operator logs shared with us count under the same rules, except that the period a log covers is listed in shadow/AGENTS.md before the log is read, and every action in that period is audited.
+At a read, a threshold whose minimum is not met is reported with the counts and the words "no read". It is neither a pass nor a kill.
+The fit gate reads A1 on its own date, from every action counted by then. A pass at an earlier read does not carry forward.
+Disclosed because it favours the hypothesis: docs/SHADOW.md counted every located record. Counting fewer raises the rate and makes the kill's 200 slower to reach. The reason for it: an action whose premises could not be checked was not audited against the state it cites, which is what A1's test asks for.
