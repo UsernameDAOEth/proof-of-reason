@@ -165,8 +165,11 @@ product code was written.
 
 | | |
 | --- | --- |
-| sha256 of [docs/PREREG.md](docs/PREREG.md) | `5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4` |
+| sha256 of [docs/PREREG.md](docs/PREREG.md) v1.0, the file's first 2,770 bytes | `5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4` |
 | Gate dates | 13 Oct: first read. 3 Nov: second read. 15 Dec: fit gate. |
+
+The file is append-only. Amendments are appended after those 2,770 bytes with a date and a reason,
+and never edit them, so `head -c 2770 docs/PREREG.md | shasum -a 256` reproduces the published hash.
 
 Results publish whichever way they fall, including a kill.
 

@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -10,18 +10,42 @@ import {
   ENS_NAME,
   IDENTITY_REGISTRY,
   PREREG_SHA256,
+  PREREG_V1_BYTES,
   REGISTRATION_TYPE,
   SITE_ORIGIN,
   buildRegistration,
+  preregAmendments,
   preregSha256,
 } from '../../scripts/gen-registration.ts'
 
 const SCRIPT = fileURLToPath(new URL('../../scripts/gen-registration.ts', import.meta.url))
 
 describe('agent-registration.json', () => {
-  it('pins the published pre-registration hash, which docs/PREREG.md still matches', () => {
+  it('pins the published v1.0 hash, which the first bytes of docs/PREREG.md still match', () => {
     expect(PREREG_SHA256).toBe('5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4')
+    expect(PREREG_V1_BYTES).toBe(2770)
     expect(preregSha256()).toBe(PREREG_SHA256)
+    expect(() => preregAmendments()).not.toThrow()
+  })
+
+  it('an appended amendment keeps the v1.0 hash; an edit above it does not; stray text is refused', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'prereg-'))
+    const v1 = readFileSync(fileURLToPath(new URL('../../docs/PREREG.md', import.meta.url))).subarray(0, PREREG_V1_BYTES)
+    const amended = join(dir, 'amended.md')
+    writeFileSync(amended, Buffer.concat([v1, Buffer.from('\n## Amendment 9 (2099-01-01): test\nReason: test.\n')]))
+    expect(preregSha256(amended)).toBe(PREREG_SHA256)
+    expect(preregAmendments(amended)).toContain('## Amendment 9')
+    const edited = join(dir, 'edited.md')
+    const bytes = Buffer.from(v1)
+    bytes[0] = bytes[0]! ^ 1
+    writeFileSync(edited, bytes)
+    expect(preregSha256(edited)).not.toBe(PREREG_SHA256)
+    const stray = join(dir, 'stray.md')
+    writeFileSync(stray, Buffer.concat([v1, Buffer.from('A stray line.\n')]))
+    expect(() => preregAmendments(stray)).toThrow(/Amendment/)
+    const short = join(dir, 'short.md')
+    writeFileSync(short, v1.subarray(0, 100))
+    expect(() => preregAmendments(short)).toThrow(/shorter/)
   })
 
   it('uses the production hostnames, the one ENS name, and the contact address', () => {
