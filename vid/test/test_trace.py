@@ -16,7 +16,7 @@ import os
 import re
 import unittest
 
-from support import PASS_PATH, VID, load, pass_fetch, published
+from support import PASS_PATH, VID, load, pass_fetch, published, take_published, take_spec
 
 import receipt2spec
 
@@ -83,6 +83,35 @@ class ReceiptTrace(unittest.TestCase):
             len(every_slot(self.spec)),
             1 + len(receipt_slots(self.spec)) + len(operator_slots(self.spec)),
         )
+
+
+class TakeTrace(unittest.TestCase):
+    """The FAIL and WAIT takes of 29 Sep hold the same line as the PASS frame."""
+
+    def test_every_number_on_a_take_frame_is_in_its_receipt(self) -> None:
+        for outcome in ("FAIL", "WAIT"):
+            spec = take_spec(outcome)
+            receipt_text = json.dumps(take_published(outcome))
+            for text in receipt_slots(spec):
+                for number in re.findall(r"0x[0-9a-fA-F]+|\d+(?:\.\d+)?", text):
+                    with self.subTest(outcome=outcome, text=text, number=number):
+                        self.assertIn(number, receipt_text)
+
+    def test_every_operator_string_on_a_take_frame_is_in_numbers_json(self) -> None:
+        with open(NUMBERS_PATH, encoding="utf-8") as handle:
+            raw = handle.read()
+        for outcome in ("FAIL", "WAIT"):
+            spec = take_spec(outcome)
+            self.assertEqual(spec["verdict"], outcome)
+            for text in operator_slots(spec):
+                with self.subTest(outcome=outcome, text=text):
+                    self.assertIn(json.dumps(text, ensure_ascii=False), raw)
+
+    def test_the_two_sources_do_not_overlap_on_a_take_frame(self) -> None:
+        for outcome in ("FAIL", "WAIT"):
+            spec = take_spec(outcome)
+            with self.subTest(outcome=outcome):
+                self.assertEqual(set(receipt_slots(spec)) & set(operator_slots(spec)), set())
 
 
 class NumbersTrace(unittest.TestCase):

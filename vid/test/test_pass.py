@@ -1,7 +1,7 @@
 """The PASS short, built from the published receipt with the typed window standing in.
 
-Proves the laws mapping, the proof lines, the frame geometry and the thumbnail now, so that on
-30 Sep only the window source changes (--clip <screen recording>).
+Proves the laws mapping, the proof lines, the frame geometry and the thumbnail. The window stays
+typed from the receipt: the 29 Sep takes were run live and not screen-recorded.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import unittest
 
-from support import PASS_PATH, ROOT, hex_rgb, load, near, offline_fetch, pass_fetch, pixel, rgb_frame
+from support import PASS_PATH, ROOT, hex_rgb, load, near, offline_fetch, pass_fetch, pixel, rgb_frame, take_spec
 
 import frame
 import receipt2spec
@@ -150,6 +150,26 @@ class LawsAndProof(unittest.TestCase):
         self.assertLess(56 + frame.text_width(s["thumb"]["title"], 63), inner)
         for line in s["thumb"]["sub"]:
             self.assertLess(56 + frame.text_width(line, 28), inner)
+
+
+class TakeWidths(unittest.TestCase):
+    """The FAIL and WAIT takes of 29 Sep: their own words fit the frame and the thumbnail too."""
+
+    def test_titles_and_subtitles_fit(self) -> None:
+        inner = TW - 35
+        for outcome in ("FAIL", "WAIT"):
+            s = take_spec(outcome)
+            title, subtitle = s["title"]
+            with self.subTest(outcome=outcome):
+                self.assertEqual(s["verdict"], outcome)
+                self.assertLessEqual(len(title), 71)
+                self.assertLessEqual(len(subtitle), 70)
+                self.assertLess(38 + frame.text_width(title, 34), 1501)   # identity column at 1501
+                self.assertLess(36 + frame.text_width(subtitle, 26), 1501)
+                self.assertLess(56 + frame.text_width(s["series_thumb"], 30), inner)
+                self.assertLess(56 + frame.text_width(s["thumb"]["title"], 63), inner)
+                for line in s["thumb"]["sub"]:
+                    self.assertLess(56 + frame.text_width(line, 28), inner)
 
 
 class FrameIsProductBlind(unittest.TestCase):

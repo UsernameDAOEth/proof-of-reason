@@ -243,35 +243,38 @@ class EpisodeRefusal(Workdir):
         self.assertFalse(os.path.exists(out))
 
 
-class PendingVerdicts(unittest.TestCase):
-    """FAIL and WAIT are pending: no receipt, no wording, no output, and no way to render one.
+class VerdictEntries(unittest.TestCase):
+    """PASS, FAIL and WAIT each have a published receipt and their own words in numbers.json.
 
     Each verdict's title and subtitle are its own. They are written when its receipt is published,
-    so until then there are no words for that short and the spec refuses to invent any.
+    and a verdict with no words there is refused rather than borrowing another verdict's.
     """
 
     def setUp(self) -> None:
         self.numbers = load(os.path.join(VID, "numbers.json"))
 
-    def test_fail_and_wait_are_pending_with_no_output(self) -> None:
+    def test_every_rendered_entry_is_a_file_with_that_url(self) -> None:
         receipts = self.numbers["receipts"]
         self.assertEqual(receipts["pass"]["url"], PASS_URL)
-        out = os.path.join(VID, "out")
-        rendered = os.listdir(out) if os.path.isdir(out) else []
-        for key in ("fail", "wait"):
+        for key in ("pass", "fail", "wait"):
             with self.subTest(key=key):
-                self.assertEqual(receipts[key], {"state": "pending", "file": None, "url": None})
-                self.assertFalse([name for name in rendered if key in name.lower()], rendered)
+                entry = receipts[key]
+                self.assertEqual(entry["state"], "rendered")
+                self.assertEqual(load(os.path.join(VID, entry["file"]))["provenance"]["url"], entry["url"])
 
-    def test_pass_has_wording_and_the_pending_verdicts_do_not(self) -> None:
+    def test_each_verdict_has_its_own_wording(self) -> None:
         self.assertEqual(
             receipt2spec.wording(self.numbers, "PASS"),
             ("THE AGENT STATED ITS REASON.", "the chain said true. the gate moved the money."),
         )
-        for outcome in ("FAIL", "WAIT"):
-            with self.subTest(outcome=outcome), self.assertRaises(provenance.Refused) as caught:
-                receipt2spec.wording(self.numbers, outcome)
-            self.assertIn(outcome, caught.exception.reason)
+        self.assertEqual(
+            receipt2spec.wording(self.numbers, "FAIL"),
+            ("THE AGENT STATED A FALSE REASON.", "the chain said false. the gate refused it. nothing was sent."),
+        )
+        self.assertEqual(
+            receipt2spec.wording(self.numbers, "WAIT"),
+            ("THE AGENT LEFT OUT A REQUIRED FACT.", "the gate let it through once its owner signed off."),
+        )
 
     def test_a_receipt_whose_verdict_has_no_wording_builds_nothing(self) -> None:
         # The published PASS receipt, with its wording taken back out of numbers.json: a live

@@ -11,6 +11,9 @@ VID = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = os.path.dirname(VID)
 FIXTURES = os.path.join(VID, "test", "fixtures")
 PASS_PATH = os.path.join(VID, "receipts", "pass.json")
+# The three takes run live on Monad mainnet on 29 Sep 2026, not screen-recorded. PASS_PATH stays the 25 Sep first receipt.
+TAKE_DIR = os.path.join(VID, "receipts", "take-2026-09-29")
+TAKE_PATHS = {outcome: os.path.join(TAKE_DIR, f"{outcome.lower()}.json") for outcome in ("PASS", "FAIL", "WAIT")}
 if VID not in sys.path:
     sys.path.insert(0, VID)
 
@@ -42,6 +45,24 @@ def offline_fetch(documents: dict[str, dict]):
 def pass_fetch():
     receipt = load(PASS_PATH)
     return offline_fetch({receipt["provenance"]["url"]: published()})
+
+
+def take_published(outcome: str) -> dict:
+    """What api.proofofreason.com serves for a 29 Sep take: that receipt minus its provenance."""
+    return {key: value for key, value in load(TAKE_PATHS[outcome]).items() if key != "provenance"}
+
+
+def take_fetch(outcome: str):
+    receipt = load(TAKE_PATHS[outcome])
+    return offline_fetch({receipt["provenance"]["url"]: take_published(outcome)})
+
+
+def take_spec(outcome: str) -> dict:
+    """The spec for a 29 Sep take, built offline against its own published document."""
+    import receipt2spec
+
+    path = TAKE_PATHS[outcome]
+    return receipt2spec.spec_from_receipt(load(path), path=path, fetch=take_fetch(outcome))
 
 
 def rgb_frame(path: str, width: int, height: int, at: float | None = None) -> bytes:
