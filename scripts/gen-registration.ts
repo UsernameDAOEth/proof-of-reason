@@ -10,8 +10,15 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 export const IDENTITY_REGISTRY = '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432'
 export const CHAIN_ID = 143
-/** sha256 of docs/PREREG.md as committed in 073cceb and published. */
+/** sha256 of docs/PREREG.md v1.0 as committed in 073cceb and published. */
 export const PREREG_SHA256 = '5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4'
+/**
+ * Byte length of docs/PREREG.md v1.0. The file is append-only: amendments are appended after
+ * these bytes and never edit them, so the published hash is always the hash of this prefix.
+ */
+export const PREREG_V1_BYTES = 2770
+/** Every amendment opens after a blank line with this heading. */
+export const AMENDMENT_HEADING = '\n## Amendment '
 export const REGISTRATION_TYPE = 'https://eips.ethereum.org/EIPS/eip-8004#registration-v1'
 export const API_ORIGIN = 'https://api.proofofreason.com'
 export const SITE_ORIGIN = 'https://proofofreason.com'
@@ -28,8 +35,24 @@ export type RegistrationOptions = {
   agentId?: number
 }
 
-export function preregSha256(path = fileURLToPath(new URL('../docs/PREREG.md', import.meta.url))): string {
-  return createHash('sha256').update(readFileSync(path)).digest('hex')
+const PREREG_PATH = fileURLToPath(new URL('../docs/PREREG.md', import.meta.url))
+
+/** sha256 of the v1.0 text, which is the first PREREG_V1_BYTES bytes of docs/PREREG.md. */
+export function preregSha256(path = PREREG_PATH): string {
+  return createHash('sha256').update(readFileSync(path).subarray(0, PREREG_V1_BYTES)).digest('hex')
+}
+
+/** The amendments appended after v1.0. Refuses a shorter file or anything else after v1.0. */
+export function preregAmendments(path = PREREG_PATH): string {
+  const bytes = readFileSync(path)
+  if (bytes.length < PREREG_V1_BYTES) {
+    throw new Error(`docs/PREREG.md is shorter than its published v1.0 (${PREREG_V1_BYTES} bytes)`)
+  }
+  const tail = bytes.subarray(PREREG_V1_BYTES).toString('utf8')
+  if (tail !== '' && !tail.startsWith(AMENDMENT_HEADING)) {
+    throw new Error('docs/PREREG.md: text after v1.0 must be amendments, each opening with "## Amendment" after a blank line')
+  }
+  return tail
 }
 
 export function buildRegistration(options: RegistrationOptions = {}) {
@@ -91,8 +114,11 @@ function argValue(args: string[], flag: string): string | undefined {
 function main(args: string[]) {
   const actual = preregSha256()
   if (actual !== PREREG_SHA256) {
-    throw new Error(`docs/PREREG.md hashes to ${actual}, not the published ${PREREG_SHA256}; refusing to write`)
+    throw new Error(
+      `the first ${PREREG_V1_BYTES} bytes of docs/PREREG.md hash to ${actual}, not the published ${PREREG_SHA256}; refusing to write`,
+    )
   }
+  preregAmendments()
   if (args.includes('--url')) throw new Error(`--url was removed; the endpoint is always ${API_ORIGIN}`)
   const agentId = argValue(args, '--agent-id')
   const registration = buildRegistration({

@@ -162,13 +162,18 @@ because the public node forgets state after about 5.6 days (measured 2026-09-30 
 
 ## Pre-registered, before any code
 
-The hypothesis, the kill thresholds and the gate dates were registered on 2026-09-17, before any
-product code was written.
+The hypothesis, the kill thresholds and the gate dates were written down before any product code.
+The file says it was registered on 2026-09-17. It is the first commit in this repository, `073cceb`,
+dated 2026-09-18, and its sha256 below was first posted publicly on 2026-09-25:
+[the post](https://x.com/Djzs_ai/status/2103540228128694716).
 
 | | |
 | --- | --- |
-| sha256 of [docs/PREREG.md](docs/PREREG.md) | `5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4` |
+| sha256 of [docs/PREREG.md](docs/PREREG.md) v1.0, the file's first 2,770 bytes | `5f6a494f937dc6fc915ae154fe347728aea5816c08523204bb73dedf02c7c2d4` |
 | Gate dates | 13 Oct: first read. 3 Nov: second read. 15 Dec: fit gate. |
+
+The file is append-only. Amendments are appended after those 2,770 bytes with a date and a reason,
+and never edit them, so `head -c 2770 docs/PREREG.md | shasum -a 256` reproduces the published hash.
 
 Results publish whichever way they fall, including a kill.
 
