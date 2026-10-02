@@ -109,17 +109,17 @@ Source: DJ, 2026-09-19. "The Foundation RPC" is https://rpc.monad.xyz. Monad's d
 
 - Observers read sequentially and never batch. Every read is one `eth_call` pinned to one block. It is sent only after the previous read returns, in claim order and then ascending block order. There is no JSON-RPC batch, no Multicall, and no concurrency. This is enforced in engine/src/morpho.ts (`observe`, `observeAll`) and tested there (call order, at most one read in flight). worker/test/wiring.test.ts also enforces it at the wire: no batch arrays, no Multicall3 target, at most one RPC request in flight.
 - The viem transport is created with `http(url, { batch: false })` and without the client-level `batch.multicall` option, in both the worker and the live test.
-- Primary RPC: an archive-capable Monad endpoint (QuickNode or Tenderly Node). Its URL carries an access token, so it is a secret: `RPC_URL` in contracts/.env.deploy, and `MONAD_RPC_URL` as a Cloudflare secret for the worker. It never appears in a tracked file, a log, or an error response.
-- Public endpoints (section 4) are fallback only: for the live test's default, and for a manual switch if the archive endpoint is down.
+- Primary RPC: Monad has no separate archive tier. The public rpc.monad.xyz kept about the last 5.6 days of state when measured on 2026-09-30 (UTC). https://rpc-mainnet.monadinfra.com (Monad Foundation, listed on the docs.monad.xyz Historical Data page) served state at blocks 50,000,000, 90,000,000, 100,000,000 and 106,277,363 on 2026-10-01 (UTC), and it is a single-provider trust assumption. The URL is treated as a secret, because a provider URL can carry an access token: `RPC_URL` in contracts/.env.deploy, and `MONAD_RPC_URL` as a Cloudflare secret for the worker. It never appears in a tracked file, a log, or an error response.
+- Public endpoints (section 4) are fallback only: for the live test's default, and for a manual switch if the primary endpoint is down.
 - Cost of sequential reads: a rate claim takes 11 reads with the default 5-block window (params, then state and IRM rate at each block). The worst case, a median window at its cap of 20 blocks, takes 41. A utilization or liquidity claim takes 5. Measured 2026-09-19: the live test's 44 sequential reads through https://rpc.monad.xyz took 7,668 ms from DJ's machine, about 174 ms per read. At that rate:
   - the demo mandate (one rate plus one liquidity claim: 16 reads, plus the chain id and head reads) takes about 3.1 s
   - a worst-case 41-read rate claim takes about 7.1 s
   - one check at this pace issues about 6 requests per second, under rpc.monad.xyz's 20 per second
-- Freshness bound: ReasonGate.DEFAULT_MAX_AGE_BLOCKS is 60, about 18 s at about 0.30 s per block (raised from 20 on 2026-09-19 by DJ: 3 s of reads plus signing, response, agent submission, and inclusion did not fit in 6 s). The owner can change it with setMaxAgeBlocks. docs/CLAIMS.md states it as the freshness bound. Latency from the Cloudflare edge to the archive RPC has not been measured.
+- Freshness bound: ReasonGate.DEFAULT_MAX_AGE_BLOCKS is 60, about 18 s at about 0.30 s per block (raised from 20 on 2026-09-19 by DJ: 3 s of reads plus signing, response, agent submission, and inclusion did not fit in 6 s). The owner can change it with setMaxAgeBlocks. docs/CLAIMS.md states it as the freshness bound. Latency from the Cloudflare edge to the primary RPC has not been measured.
 
 ## 9. Zerion support for Monad (143)
 
-Status on 2026-09-19: not yet confirmed live. ZERION_API_KEY was not set in the Phase 2C-a session, so the Zerion API was never called, and no live response exists to cite yet.
+Status: confirmed live. `pnpm zerion:chains` at 2026-10-01T01:31:01Z wrote shadow/evidence/zerion-chains.json (monad_supported true, id monad, chainId 143), and the live smoke test printed "Monad (143) in the Zerion chain catalog: yes, id \"monad\"" the same evening (30 Sep, Pacific).
 
 Documentary evidence (not a live response), from the official `zerion-cli` 1.9.1 package, published from github.com/zeriontech/zerion-ai by maintainers at zerion.io:
 - `skills/zerion/SKILL.md`, "Supported chains": the snapshot of the live catalog lists `monad`. The same file warns that the snapshot goes stale and that the live `/chains/` catalog is the source of truth.
@@ -141,7 +141,7 @@ Source: `@morpho-org/morpho-ts` 2.15.0 (re-exported by `@morpho-org/morpho-sdk` 
 | Ethereum | 1 | ETHEREUM_RPC_URL | 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb | 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC | ethereum-rpc.publicnode.com: Morpho 15623 bytes, IRM 2717 bytes, isIrmEnabled true |
 
 Notes:
-- The RPC variables hold archive-capable endpoints and are read by the shadow runner at call time. The engine never reads the environment.
+- BASE_RPC_URL and ETHEREUM_RPC_URL hold archive-capable endpoints. For MONAD_RPC_URL, Monad has no separate archive tier: see section 8. All three are read by the shadow runner at call time. The engine never reads the environment.
 - viem 2.56.7's default Ethereum RPC (https://ethereum.reth.rs/rpc) answered HTTP 404 on 2026-09-19, so the Ethereum check used PublicNode instead. Public endpoints are not used by the runner; they were used here for these one-off read-only checks.
 - The same read policy as section 8 applies on every chain: one request per read, sequential, never batched.
 

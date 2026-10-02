@@ -61,17 +61,19 @@ tests that pin both strings so the two cannot drift:
 | --- | --- | --- |
 | neither set | HyperSync | the default, and what a fresh clone does |
 | `ENVIO_RPC_URL` set | HyperSync, that RPC as fallback | a little more reliability |
-| `ENVIO_RPC_URL` set, `ENVIO_RPC_FOR=sync` | that RPC only | no HyperSync; needs an archive node |
+| `ENVIO_RPC_URL` set, `ENVIO_RPC_FOR=sync` | that RPC only | no HyperSync; any Monad RPC serves the blocks and logs it needs |
 
 An invalid `ENVIO_RPC_FOR` is refused rather than defaulted, and `ENVIO_RPC_FOR=sync` without a URL
-is refused too. Monad's Foundation RPC forbids JSON-RPC batch and rate limits hard, so an RPC used
-for `sync` must be an archive endpoint of your own (docs/MONAD.md section 8).
+is refused too. The handlers (envio/src/handlers.ts) read only blocks and event logs, never contract
+state at a past block, so any Monad RPC serves a `sync` run; Monad has no separate archive tier
+(docs/MONAD.md section 8). rpc.monad.xyz is listed at 20 requests per second with batch not allowed,
+so a full `sync` through it is slow.
 
 Envio interpolates `${...}` in `config.yaml` at parse time and **fails when `ENVIO_RPC_URL` is not
 set at all**, even for a HyperSync run. So export it, empty or not, before any `envio` command:
 
 ```sh
-export ENVIO_RPC_URL=https://rpc.monad.xyz   # or your archive endpoint
+export ENVIO_RPC_URL=https://rpc.monad.xyz   # or any other Monad RPC
 ```
 
 ## Run it locally

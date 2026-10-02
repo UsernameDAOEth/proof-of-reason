@@ -59,6 +59,16 @@ describe('Zerion client', () => {
     expect(txRequests[0]!.url.searchParams.get('page[size]')).toBe('100')
   })
 
+  it('sends the window as filter[min_mined_at] and filter[max_mined_at], in Unix milliseconds', async () => {
+    const seen: Seen[] = []
+    const client = createZerionClient({ fetch: zerionFetch(pagedRoutes(), seen) })
+    await client.listTransactions(WALLET, { chain: BASE_CHAIN_ID, ...window })
+    const first = seen.find((s) => s.url.pathname === TX_PATH)!
+    expect(first.url.searchParams.get('filter[min_mined_at]')).toBe(String((POSTED_S - 3600) * 1000))
+    expect(first.url.searchParams.get('filter[max_mined_at]')).toBe(String((POSTED_S + 3600) * 1000))
+    expect(first.url.searchParams.get('filter[min_mined_at]')).toMatch(/^\d{13}$/)
+  })
+
   it('marks a listing truncated at the page cap', async () => {
     const client = createZerionClient({ fetch: zerionFetch(pagedRoutes()), maxPages: 1 })
     const wide = { from: new Date(0), to: new Date((POSTED_S + 3600) * 1000) }

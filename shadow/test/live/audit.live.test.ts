@@ -8,9 +8,11 @@ import { locate } from '../../src/locate.ts'
 import { auditRecord, recordJson, verifySeal } from '../../src/run.ts'
 import { createZerionClient } from '../../src/zerion.ts'
 
-// Opt-in: runs with LIVE=1 and skips unless ZERION_API_KEY and MONAD_RPC_URL (an archive RPC) are
-// set. It audits one real public wallet on Monad. The wallet and transaction were found on chain
-// on 2026-09-19 through rpc.monad.xyz: the EOA sent tx 0xe06d...e3c3 at block 106277363 (block time
+// Opt-in: runs with LIVE=1 and skips unless ZERION_API_KEY and MONAD_RPC_URL are set. MONAD_RPC_URL
+// must hold state at block 106277363: Monad has no separate archive tier, rpc.monad.xyz kept about
+// 5.6 days of state on 2026-09-30, and https://rpc-mainnet.monadinfra.com served that block then.
+// It audits one real public wallet on Monad. The wallet and transaction were found on chain on
+// 2026-09-19 through rpc.monad.xyz: the EOA sent tx 0xe06d...e3c3 at block 106277363 (block time
 // 1789851181) to 0xdb9B...7dB3, selector 0xcef6d209, which supplied to Morpho market 0x71ca...dec7.
 // The claims below are written by this test, not by the wallet, so the output goes to a temp
 // directory and never into shadow/records or the A1 count.

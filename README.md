@@ -157,6 +157,8 @@ One per premise, each `observed` inside the premise's `[lo, hi]`. That is the ch
 utilization or liquidity at execution, not the validator's.
 Rate claims are not re-asserted on chain; they are re-run by the verifier at the pinned block
 instead, and `docs/MONAD.md` section 13 says exactly which kinds are which.
+Re-read the observed values at the receipt's pinned block through https://rpc-mainnet.monadinfra.com,
+because the public node forgets state after about 5.6 days.
 
 ## Pre-registered, before any code
 
@@ -176,9 +178,10 @@ Results publish whichever way they fall, including a kill.
   validator is the roadmap.
 - What the gate trusts the validator for, after REASON-R1: the observations of claims the chain
   cannot re-read (rates above all) at the pinned block, and that the tally counts what the receipt
-  shows. Both are checkable after the fact against an archive node. Utilization, liquidity and the
-  Kuru book are re-read by the chain at execution; the rule that turns counts into an outcome is
-  compiled into the gate.
+  shows. Both are checkable after the fact through an RPC that still holds state at the pinned
+  block, such as https://rpc-mainnet.monadinfra.com. Utilization, liquidity and the Kuru book are
+  re-read by the chain at execution; the rule that turns counts into an outcome is compiled into
+  the gate.
 - The validator sees an agent's calldata and claims before the chain does. A dishonest validator
   could trade on that. The operator's policy is to keep no copy of non-PASS intents beyond their
   receipts and never to trade on gate inputs; a second validator or an enclave is the mechanism

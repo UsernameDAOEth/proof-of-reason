@@ -1,11 +1,11 @@
 # Proof of Reason deploy runbook (Phase 2B)
 
-Every command DJ runs in 2B, in order, with the expected output. Keys and the archive RPC URL (it carries an access token) live only in gitignored env files and Cloudflare secrets. Never paste one into a terminal command, a chat, or a tracked file. Addresses, KV ids, and hostnames are public and may be committed.
+Every command DJ runs in 2B, in order, with the expected output. Keys and the RPC URL (treated as a secret, because a provider URL can carry an access token) live only in gitignored env files and Cloudflare secrets. Never paste one into a terminal command, a chat, or a tracked file. Addresses, KV ids, and hostnames are public and may be committed.
 
 Facts used below are sourced in docs/MONAD.md: addresses and markets (sections 1 to 3), RPC (sections 4 and 8), timelock (section 2), and hosting (section 7).
 
 Conventions:
-- **RPC:** the runbook assumes an archive-capable Monad RPC (QuickNode or Tenderly Node) as `RPC_URL`. Public endpoints (rpc.monad.xyz, rpc1.monad.xyz) are fallback only.
+- **RPC:** `RPC_URL` is the Monad RPC. Monad has no separate archive tier. The public rpc.monad.xyz kept about the last 5.6 days of state when measured on 2026-09-30 (UTC). https://rpc-mainnet.monadinfra.com (Monad Foundation, listed on the docs.monad.xyz Historical Data page) served state at blocks 50,000,000, 90,000,000, 100,000,000 and 106,277,363 on 2026-10-01 (UTC), and it is a single-provider trust assumption. Public endpoints (rpc.monad.xyz, rpc1.monad.xyz) are fallback only.
 - **cast:** every `cast` command runs from `contracts/` with `--rpc-url monad`, which foundry.toml resolves to `$RPC_URL`. That keeps the token out of argv and shell history.
 - **Production hostnames:** the Worker serves `https://api.proofofreason.com`; the site is `https://proofofreason.com`.
 
@@ -36,7 +36,7 @@ Why `--skip-simulation`: forge's second simulation phase re-estimates every tran
 
 - `forge --version` reports 1.8.3 or later. If forge is not found, run `export PATH="$PATH:$HOME/.foundry/bin"`.
 - `node --version` reports v22.18 or later. `pnpm --version` reports 11.x.
-- An archive-capable Monad RPC URL from QuickNode or Tenderly Node.
+- A Monad RPC URL that holds the history you need (see Conventions: Monad has no separate archive tier).
 - A deployer EOA holding at least 2.5 MON on Monad (chain 143).
 - The agent EOA address: the only address allowed to call `ReasonGate.execute`.
 - A PAY_TO address that receives the 0.10 USDC per check.
@@ -91,12 +91,12 @@ Expected: two lines, each naming `.gitignore` and the `.env.*` rule. If either l
 
 Open `contracts/.env.deploy` in your editor and fill in:
 - `PRIVATE_KEY`: the deployer key.
-- `RPC_URL`: the archive RPC URL.
+- `RPC_URL`: the Monad RPC URL.
 - `AGENT_ADDRESS`
 
 The gate owner defaults to the deployer. To use a Safe instead, add a line `GATE_OWNER=0x...`.
 
-Check the archive RPC:
+Check that the RPC holds state 1,000,000 blocks back:
 
 ```sh
 cd ~/proof-of-reason/contracts
@@ -106,9 +106,9 @@ HEAD=$(cast block-number --rpc-url monad)
 cast call 0xD5D960E8C380B724a48AC59E2DfF1b2CB4a1eAee "market(bytes32)(uint128,uint128,uint128,uint128,uint128,uint128)" 0x093bd94086b08a013c96dc0776ebf663e9300e742a2c14479211cc35da6c3439 --block $((HEAD - 1000000)) --rpc-url monad
 ```
 
-Expected: `143`, then six numbers. If you get `Block requested not found`, the endpoint is not archive-capable: stop.
+Expected: `143`, then six numbers. If you get `Block requested not found`, the endpoint does not hold state that far back: stop.
 
-Optional, read-only, through the archive RPC:
+Optional, read-only, through the same RPC:
 
 ```sh
 cd ~/proof-of-reason/engine && MONAD_RPC_URL="$RPC_URL" pnpm test:live
@@ -127,7 +127,7 @@ cast wallet new --json | python3 -c 'import json,sys; d=json.load(sys.stdin); d=
 
 Expected: one line, the validator address `0x...`. The key goes only into `worker/.env.worker`. The `"x"` mode refuses to overwrite an existing file. Then:
 - Copy the address into `VALIDATOR_ADDRESS=` in `contracts/.env.deploy`.
-- Open `worker/.env.worker` in your editor and add a second line, `MONAD_RPC_URL=`, with the archive RPC URL.
+- Open `worker/.env.worker` in your editor and add a second line, `MONAD_RPC_URL=`, with the Monad RPC URL.
 
 ## 4. Deploy the vault
 
@@ -432,7 +432,7 @@ Expected: every env file appears only in the first list, prefixed `!!` (ignored)
 - **`GateAddressMismatch`:** VALIDATOR_ADDRESS, AGENT_ADDRESS, or GATE_OWNER differ from step 4, or the contracts were edited and recompiled between steps 4 and 5. Restore the step 4 values. If the vault already made a different address allocator, the vault owner can call `setIsAllocator` for the real gate address.
 - **The custom domain fails to attach:** a DNS record for api.proofofreason.com already exists. Delete it in the dashboard and run `pnpm exec wrangler deploy` again.
 - **The worker answers `{"error":"worker is not configured: <VAR>"}`:** fill that var in wrangler.toml and redeploy. For MONAD_RPC_URL, repeat its `secret put` step. `{"error":"validator key is not configured"}`: repeat the VALIDATOR_KEY `secret put`.
-- **HTTP 429 or errors from the archive RPC:** the worker already reads sequentially with no batching. If the archive endpoint is down, switch to the public fallback until it recovers, then switch back to the archive URL the same way:
+- **HTTP 429 or errors from the primary RPC:** the worker already reads sequentially with no batching. If the primary endpoint is down, switch to the public fallback until it recovers, then switch back to the primary URL the same way:
 
   ```sh
   cd ~/proof-of-reason/worker

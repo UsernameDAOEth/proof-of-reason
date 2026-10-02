@@ -55,7 +55,7 @@ Pinned-block semantics: a read pinned to block N returns the state after every t
 
 ## Re-running any record without Zerion
 
-Zerion only found the transaction. Its hash is in the record, so anyone with an archive RPC for the chain can re-run the audit:
+Zerion only found the transaction. Its hash is in the record, so anyone with an RPC that still holds state at the pinned block can re-run the audit:
 
 1. **Check the seal.** Parse the record JSON, remove the `sha256` field, canonicalize the rest with the rules above, and hash it with SHA-256. It must equal `sha256`.
 2. **Check the transaction.** Fetch `located.txHash` from the chain. Its sender must be `record.agent.wallet`, its receipt status must be success, and its block must equal `located.blockNumber` and `pinnedBlock`. If the record names a target, its `to` and the first four bytes of its input must match.
@@ -66,7 +66,7 @@ The runner automates steps 1 to 4 with no Zerion key:
 
 ```sh
 cd shadow
-export BASE_RPC_URL=...   # or MONAD_RPC_URL / ETHEREUM_RPC_URL for the record's chain; an archive endpoint
+export BASE_RPC_URL=...   # or MONAD_RPC_URL / ETHEREUM_RPC_URL for the record's chain; it must hold state at the pinned block
 pnpm rerun records/<id>.json
 ```
 
@@ -78,11 +78,11 @@ Run from shadow/. Keys and RPC URLs come from the environment only and are never
 
 | Command | Needs | Does |
 | --- | --- | --- |
-| `pnpm run` (`--in inputs --out records --only <id>`) | ZERION_API_KEY, the chain's RPC variable | audits every input record and writes records/<id>.json; a record that hits a read error is not written and is reported by error name |
+| `pnpm run run` (`--in inputs --out records --only <id>`) | ZERION_API_KEY, the chain's RPC variable | audits every input record and writes records/<id>.json; a record that hits a read error is not written and is reported by error name |
 | `pnpm rerun records/<id>.json` | the chain's RPC variable | re-runs one record from its JSON without Zerion |
 | `pnpm ledger` | nothing | rebuilds LEDGER.md from records/ and prints the summary line |
 | `pnpm prospect -- --chain base 0x...` | ZERION_API_KEY, the chain's RPC variable | context only: counts and sizes each address's reallocate and allocate calls over the last 30 days |
 | `pnpm zerion:chains` | ZERION_API_KEY | writes evidence/zerion-chains.json and says whether Monad (143) is in the Zerion catalog |
 | `pnpm test`, `pnpm test:live` | nothing; the live test also needs ZERION_API_KEY and MONAD_RPC_URL | offline suite; opt-in live audit of one public wallet, written to a temp directory only |
 
-The RPC variables are MONAD_RPC_URL, BASE_RPC_URL, and ETHEREUM_RPC_URL (engine/src/chains.ts). Each should point to an archive-capable endpoint, because the pinned block is usually in the past.
+The RPC variables are MONAD_RPC_URL, BASE_RPC_URL, and ETHEREUM_RPC_URL (engine/src/chains.ts). BASE_RPC_URL and ETHEREUM_RPC_URL should point to archive-capable endpoints, because the pinned block is usually in the past. For MONAD_RPC_URL: Monad has no separate archive tier. The public rpc.monad.xyz kept about the last 5.6 days of state when measured on 2026-09-30 (UTC). https://rpc-mainnet.monadinfra.com (Monad Foundation, listed on the docs.monad.xyz Historical Data page) served state at blocks 50,000,000, 90,000,000, 100,000,000 and 106,277,363 on 2026-10-01 (UTC), and it is a single-provider trust assumption.

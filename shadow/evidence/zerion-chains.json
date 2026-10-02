@@ -1,0 +1,2317 @@
+{
+  "fetched_at": "2026-10-01T01:31:01.991Z",
+  "monad_supported": true,
+  "monad_entry": {
+    "id": "monad",
+    "name": "Monad",
+    "chainId": 143,
+    "externalId": "0x8f",
+    "attributes": {
+      "external_id": "0x8f",
+      "name": "Monad",
+      "icon": {
+        "url": "https://chain-icons.s3.us-east-1.amazonaws.com/monad.png"
+      },
+      "explorer": {
+        "name": "Monad Vision",
+        "token_url_format": "https://monadvision.com/token/{ADDRESS}",
+        "tx_url_format": "https://monadvision.com/tx/{HASH}",
+        "home_url": "https://monadvision.com"
+      },
+      "rpc": {
+        "public_servers_url": [
+          "https://rpc.monad.xyz"
+        ]
+      },
+      "flags": {
+        "supports_trading": true,
+        "supports_sending": true,
+        "supports_bridge": true,
+        "supports_transactions": true,
+        "supports_positions": true,
+        "supports_nft_positions": true
+      }
+    }
+  },
+  "chains": [
+    {
+      "id": "0g",
+      "name": "0G Mainnet",
+      "chainId": 16661,
+      "externalId": "0x4115",
+      "attributes": {
+        "external_id": "0x4115",
+        "name": "0G Mainnet",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/0g.png"
+        },
+        "explorer": {
+          "name": "0G Chainscan",
+          "token_url_format": "https://chainscan.0g.ai/token/{ADDRESS}",
+          "tx_url_format": "https://chainscan.0g.ai/tx/{HASH}",
+          "home_url": "https://chainscan.0g.ai"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://evmrpc.0g.ai"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "abstract",
+      "name": "Abstract",
+      "chainId": 2741,
+      "externalId": "0xab5",
+      "attributes": {
+        "external_id": "0xab5",
+        "name": "Abstract",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/abstract.png"
+        },
+        "explorer": {
+          "name": "Etherscan",
+          "token_url_format": "https://abscan.org/token/{ADDRESS}",
+          "tx_url_format": "https://abscan.org/tx/{HASH}",
+          "home_url": "https://abscan.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://api.mainnet.abs.xyz"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "ape",
+      "name": "Ape Chain",
+      "chainId": 33139,
+      "externalId": "0x8173",
+      "attributes": {
+        "external_id": "0x8173",
+        "name": "Ape Chain",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/apechain.png"
+        },
+        "explorer": {
+          "name": "ApeChain Explorer",
+          "token_url_format": "https://apescan.io/token/{ADDRESS}",
+          "tx_url_format": "https://apescan.io/tx/{HASH}",
+          "home_url": "https://apescan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.apechain.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "arbitrum",
+      "name": "Arbitrum",
+      "chainId": 42161,
+      "externalId": "0xa4b1",
+      "attributes": {
+        "external_id": "0xa4b1",
+        "name": "Arbitrum",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/arbitrum.png"
+        },
+        "explorer": {
+          "name": "Arbiscan",
+          "token_url_format": "https://arbiscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://arbiscan.io/tx/{HASH}",
+          "home_url": "https://arbiscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://arb1.arbitrum.io/rpc",
+            "https://arbitrum-one-rpc.publicnode.com",
+            "wss://arbitrum-one-rpc.publicnode.com",
+            "https://rpcfree.com/arbitrum-rpc",
+            "https://rpc.satelink.network/rpc/arbitrum",
+            "https://xrpc.cl/arbitrum"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "arc",
+      "name": "Arc",
+      "chainId": 5042,
+      "externalId": "0x13b2",
+      "attributes": {
+        "external_id": "0x13b2",
+        "name": "Arc",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/arc.png"
+        },
+        "explorer": {
+          "name": "Arc Explorer",
+          "token_url_format": "https://explorer.arc.io/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.arc.io/tx/{HASH}",
+          "home_url": "https://explorer.arc.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://arc.drpc.org",
+            "https://rpc.mainnet.arc.io",
+            "https://rpc.blockdaemon.mainnet.arc.io",
+            "https://rpc.drpc.mainnet.arc.io",
+            "https://rpc.quicknode.mainnet.arc.io",
+            "https://rpc.beamrpc.com",
+            "wss://rpc.beamrpc.com",
+            "wss://arc.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "astar-zkevm",
+      "name": "Astar zkEVM",
+      "chainId": 3776,
+      "externalId": "0xec0",
+      "attributes": {
+        "external_id": "0xec0",
+        "name": "Astar zkEVM",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/3776"
+        },
+        "explorer": {
+          "name": "Blockscout Astar zkEVM explorer",
+          "token_url_format": "https://astar-zkevm.explorer.startale.com/token/{ADDRESS}",
+          "tx_url_format": "https://astar-zkevm.explorer.startale.com/tx/{HASH}",
+          "home_url": "https://astar-zkevm.explorer.startale.com"
+        },
+        "rpc": null,
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": false,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "aurora",
+      "name": "Aurora",
+      "chainId": 1313161554,
+      "externalId": "0x4e454152",
+      "attributes": {
+        "external_id": "0x4e454152",
+        "name": "Aurora",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/aurora.png"
+        },
+        "explorer": {
+          "name": "Aurora Explorer",
+          "token_url_format": "https://explorer.aurora.dev/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.aurora.dev/tx/{HASH}",
+          "home_url": "https://explorer.aurora.dev"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.aurora.dev",
+            "https://aurora.drpc.org",
+            "wss://aurora.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "avalanche",
+      "name": "Avalanche",
+      "chainId": 43114,
+      "externalId": "0xa86a",
+      "attributes": {
+        "external_id": "0xa86a",
+        "name": "Avalanche",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/avalanche.png"
+        },
+        "explorer": {
+          "name": "Etherscan",
+          "token_url_format": "https://snowscan.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://snowscan.xyz/tx/{HASH}",
+          "home_url": "https://snowscan.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://api.avax.network/ext/bc/C/rpc",
+            "https://avalanche-c-chain-rpc.publicnode.com",
+            "wss://avalanche-c-chain-rpc.publicnode.com",
+            "https://xrpc.cl/avalanche"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "base",
+      "name": "Base",
+      "chainId": 8453,
+      "externalId": "0x2105",
+      "attributes": {
+        "external_id": "0x2105",
+        "name": "Base",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/base.png"
+        },
+        "explorer": {
+          "name": "basescan",
+          "token_url_format": "https://basescan.org/token/{ADDRESS}",
+          "tx_url_format": "https://basescan.org/tx/{HASH}",
+          "home_url": "https://basescan.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.base.org/",
+            "https://developer-access-mainnet.base.org/",
+            "https://base.gateway.tenderly.co",
+            "wss://base.gateway.tenderly.co",
+            "https://base-rpc.publicnode.com",
+            "wss://base-rpc.publicnode.com",
+            "https://rpcfree.com/base-rpc",
+            "https://rpc.baseazul.dev",
+            "https://rpc.satelink.network/rpc/base",
+            "https://xrpc.cl/base"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "berachain",
+      "name": "Berachain",
+      "chainId": 80094,
+      "externalId": "0x138de",
+      "attributes": {
+        "external_id": "0x138de",
+        "name": "Berachain",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/berra.png"
+        },
+        "explorer": {
+          "name": "Berascan Berachain Block Explorer",
+          "token_url_format": "https://berascan.com/token/{ADDRESS}",
+          "tx_url_format": "https://berascan.com/tx/{HASH}",
+          "home_url": "https://berascan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.berachain.com",
+            "https://berachain-rpc.publicnode.com",
+            "wss://berachain-rpc.publicnode.com",
+            "https://rpc.berachain-apis.com",
+            "wss://rpc.berachain-apis.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "binance-smart-chain",
+      "name": "BNB Chain",
+      "chainId": 56,
+      "externalId": "0x38",
+      "attributes": {
+        "external_id": "0x38",
+        "name": "BNB Chain",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/bsc.png"
+        },
+        "explorer": {
+          "name": "bscscan",
+          "token_url_format": "https://bscscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://bscscan.com/tx/{HASH}",
+          "home_url": "https://bscscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://bsc-dataseed1.bnbchain.org",
+            "https://bsc-dataseed2.bnbchain.org",
+            "https://bsc-dataseed3.bnbchain.org",
+            "https://bsc-dataseed4.bnbchain.org",
+            "https://bsc-dataseed1.defibit.io",
+            "https://bsc-dataseed2.defibit.io",
+            "https://bsc-dataseed3.defibit.io",
+            "https://bsc-dataseed4.defibit.io",
+            "https://bsc-dataseed1.ninicoin.io",
+            "https://bsc-dataseed2.ninicoin.io",
+            "https://bsc-dataseed3.ninicoin.io",
+            "https://bsc-dataseed4.ninicoin.io",
+            "https://bsc-rpc.publicnode.com",
+            "https://bsc-rpc-public.chainpulse.cc",
+            "wss://bsc-rpc.publicnode.com",
+            "wss://bsc-ws-node.nariox.org",
+            "https://xrpc.cl/bsc"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "blast",
+      "name": "Blast",
+      "chainId": 81457,
+      "externalId": "0x13e31",
+      "attributes": {
+        "external_id": "0x13e31",
+        "name": "Blast",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/81457"
+        },
+        "explorer": {
+          "name": "Blastscan",
+          "token_url_format": "https://blastscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://blastscan.io/tx/{HASH}",
+          "home_url": "https://blastscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.blast.io",
+            "https://rpc.ankr.com/blast",
+            "https://blast.din.dev/rpc",
+            "https://blastl2-mainnet.public.blastapi.io",
+            "https://blast.blockpi.network/v1/rpc/public",
+            "https://blast-rpc.publicnode.com",
+            "wss://blast-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "bob",
+      "name": "BOB",
+      "chainId": 60808,
+      "externalId": "0xed88",
+      "attributes": {
+        "external_id": "0xed88",
+        "name": "BOB",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/bob.png"
+        },
+        "explorer": {
+          "name": "bobscout",
+          "token_url_format": "https://explorer.gobob.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.gobob.xyz/tx/{HASH}",
+          "home_url": "https://explorer.gobob.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.gobob.xyz",
+            "wss://rpc.gobob.xyz",
+            "https://bob-mainnet.public.blastapi.io",
+            "wss://bob-mainnet.public.blastapi.io"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "celo",
+      "name": "Celo",
+      "chainId": 42220,
+      "externalId": "0xa4ec",
+      "attributes": {
+        "external_id": "0xa4ec",
+        "name": "Celo",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/42220"
+        },
+        "explorer": {
+          "name": "Celoscan",
+          "token_url_format": "https://celoscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://celoscan.io/tx/{HASH}",
+          "home_url": "https://celoscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://forno.celo.org",
+            "wss://forno.celo.org/ws"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "cronos-zkevm",
+      "name": "Cronos zkEVM",
+      "chainId": 388,
+      "externalId": "0x184",
+      "attributes": {
+        "external_id": "0x184",
+        "name": "Cronos zkEVM",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/cronoszkevm.png"
+        },
+        "explorer": {
+          "name": "Cronos zkEVM",
+          "token_url_format": "https://explorer.zkevm.cronos.org//token/{ADDRESS}",
+          "tx_url_format": "https://explorer.zkevm.cronos.org//tx/{HASH}",
+          "home_url": "https://explorer.zkevm.cronos.org/"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.zkevm.cronos.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "cyber",
+      "name": "Cyber",
+      "chainId": 7560,
+      "externalId": "0x1d88",
+      "attributes": {
+        "external_id": "0x1d88",
+        "name": "Cyber",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/cyber.png"
+        },
+        "explorer": {
+          "name": "Cyber Mainnet Explorer",
+          "token_url_format": "https://cyberscan.co/token/{ADDRESS}",
+          "tx_url_format": "https://cyberscan.co/tx/{HASH}",
+          "home_url": "https://cyberscan.co"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://cyber.alt.technology/",
+            "wss://cyber-ws.alt.technology/",
+            "https://rpc.cyber.co/",
+            "wss://rpc.cyber.co/"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "degen",
+      "name": "Degen Chain",
+      "chainId": 666666666,
+      "externalId": "0x27bc86aa",
+      "attributes": {
+        "external_id": "0x27bc86aa",
+        "name": "Degen Chain",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/666666666"
+        },
+        "explorer": {
+          "name": "Degen Explorer",
+          "token_url_format": "https://explorer.degen.tips/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.degen.tips/tx/{HASH}",
+          "home_url": "https://explorer.degen.tips"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.degen.tips"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "ethereum",
+      "name": "Ethereum",
+      "chainId": 1,
+      "externalId": "0x1",
+      "attributes": {
+        "external_id": "0x1",
+        "name": "Ethereum",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/ethereum.png"
+        },
+        "explorer": {
+          "name": "etherscan",
+          "token_url_format": "https://etherscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://etherscan.io/tx/{HASH}",
+          "home_url": "https://etherscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://ethereum-rpc.publicnode.com",
+            "https://api.mycryptoapi.com/eth",
+            "https://cloudflare-eth.com",
+            "wss://ethereum-rpc.publicnode.com",
+            "https://mainnet.gateway.tenderly.co",
+            "wss://mainnet.gateway.tenderly.co",
+            "https://rpc.blocknative.com/boost",
+            "https://rpc.flashbots.net",
+            "https://rpc.flashbots.net/fast",
+            "https://rpc.mevblocker.io",
+            "https://rpc.mevblocker.io/fast",
+            "https://rpc.mevblocker.io/noreverts",
+            "https://rpc.mevblocker.io/fullprivacy",
+            "https://eth.drpc.org",
+            "wss://eth.drpc.org",
+            "https://api.securerpc.com/v1",
+            "https://xrpc.cl/eth"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "fantom",
+      "name": "Fantom",
+      "chainId": 250,
+      "externalId": "0xfa",
+      "attributes": {
+        "external_id": "0xfa",
+        "name": "Fantom",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/fantom.png"
+        },
+        "explorer": {
+          "name": "ftmscan",
+          "token_url_format": "https://ftmscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://ftmscan.com/tx/{HASH}",
+          "home_url": "https://ftmscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.ftm.tools",
+            "https://fantom-rpc.publicnode.com",
+            "wss://fantom-rpc.publicnode.com",
+            "https://fantom.drpc.org",
+            "wss://fantom.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "fraxtal",
+      "name": "Fraxtal",
+      "chainId": 252,
+      "externalId": "0xfc",
+      "attributes": {
+        "external_id": "0xfc",
+        "name": "Fraxtal",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/fraxtal.png"
+        },
+        "explorer": {
+          "name": "fraxscan",
+          "token_url_format": "https://fraxscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://fraxscan.com/tx/{HASH}",
+          "home_url": "https://fraxscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.frax.com",
+            "https://fraxtal-rpc.publicnode.com",
+            "wss://fraxtal-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "gravity-alpha",
+      "name": "Gravity Alpha",
+      "chainId": 1625,
+      "externalId": "0x659",
+      "attributes": {
+        "external_id": "0x659",
+        "name": "Gravity Alpha",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/gravity.png"
+        },
+        "explorer": {
+          "name": "Gravity Alpha Mainnet Explorer",
+          "token_url_format": "https://explorer.gravity.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.gravity.xyz/tx/{HASH}",
+          "home_url": "https://explorer.gravity.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.gravity.xyz",
+            "https://rpc.ankr.com/gravity"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "hyperevm",
+      "name": "HyperEVM",
+      "chainId": 999,
+      "externalId": "0x3e7",
+      "attributes": {
+        "external_id": "0x3e7",
+        "name": "HyperEVM",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/999"
+        },
+        "explorer": {
+          "name": "HyperEVM Explorer",
+          "token_url_format": "https://hyperevmscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://hyperevmscan.io/tx/{HASH}",
+          "home_url": "https://hyperevmscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.hypurrscan.io"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "ink",
+      "name": "Ink",
+      "chainId": 57073,
+      "externalId": "0xdef1",
+      "attributes": {
+        "external_id": "0xdef1",
+        "name": "Ink",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/ink.png"
+        },
+        "explorer": {
+          "name": "Ink Explorer",
+          "token_url_format": "https://explorer.inkonchain.com/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.inkonchain.com/tx/{HASH}",
+          "home_url": "https://explorer.inkonchain.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc-gel.inkonchain.com",
+            "https://rpc-qnd.inkonchain.com",
+            "wss://rpc-gel.inkonchain.com",
+            "wss://rpc-qnd.inkonchain.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "katana",
+      "name": "Katana",
+      "chainId": 747474,
+      "externalId": "0xb67d2",
+      "attributes": {
+        "external_id": "0xb67d2",
+        "name": "Katana",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/katana.png"
+        },
+        "explorer": {
+          "name": "katanascan",
+          "token_url_format": "https://katanascan.com/token/{ADDRESS}",
+          "tx_url_format": "https://katanascan.com/tx/{HASH}",
+          "home_url": "https://katanascan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.katana.network",
+            "https://katana.gateway.tenderly.co/",
+            "https://rpc.katanarpc.com/"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "lens",
+      "name": "Lens",
+      "chainId": 232,
+      "externalId": "0xe8",
+      "attributes": {
+        "external_id": "0xe8",
+        "name": "Lens",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/lens.png"
+        },
+        "explorer": {
+          "name": "Lens Block Explorer",
+          "token_url_format": "https://explorer.lens.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.lens.xyz/tx/{HASH}",
+          "home_url": "https://explorer.lens.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.lens.xyz"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "linea",
+      "name": "Linea",
+      "chainId": 59144,
+      "externalId": "0xe708",
+      "attributes": {
+        "external_id": "0xe708",
+        "name": "Linea",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/59144"
+        },
+        "explorer": {
+          "name": "Etherscan",
+          "token_url_format": "https://lineascan.build/token/{ADDRESS}",
+          "tx_url_format": "https://lineascan.build/tx/{HASH}",
+          "home_url": "https://lineascan.build"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.linea.build",
+            "wss://rpc.linea.build",
+            "https://linea-rpc.publicnode.com",
+            "wss://linea-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "lisk",
+      "name": "Lisk",
+      "chainId": 1135,
+      "externalId": "0x46f",
+      "attributes": {
+        "external_id": "0x46f",
+        "name": "Lisk",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/lisk.png"
+        },
+        "explorer": {
+          "name": "blockscout",
+          "token_url_format": "https://blockscout.lisk.com/token/{ADDRESS}",
+          "tx_url_format": "https://blockscout.lisk.com/tx/{HASH}",
+          "home_url": "https://blockscout.lisk.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.api.lisk.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "manta-pacific",
+      "name": "Manta Pacific",
+      "chainId": 169,
+      "externalId": "0xa9",
+      "attributes": {
+        "external_id": "0xa9",
+        "name": "Manta Pacific",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/manta.png"
+        },
+        "explorer": {
+          "name": "manta-pacific Explorer",
+          "token_url_format": "https://pacific-explorer.manta.network/token/{ADDRESS}",
+          "tx_url_format": "https://pacific-explorer.manta.network/tx/{HASH}",
+          "home_url": "https://pacific-explorer.manta.network"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://pacific-rpc.manta.network/http",
+            "https://manta-pacific.drpc.org",
+            "wss://manta-pacific.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "mantle",
+      "name": "Mantle",
+      "chainId": 5000,
+      "externalId": "0x1388",
+      "attributes": {
+        "external_id": "0x1388",
+        "name": "Mantle",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/mantle.png"
+        },
+        "explorer": {
+          "name": "mantlescan",
+          "token_url_format": "https://mantlescan.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://mantlescan.xyz/tx/{HASH}",
+          "home_url": "https://mantlescan.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.mantle.xyz",
+            "https://mantle-rpc.publicnode.com",
+            "wss://mantle-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "megaeth",
+      "name": "MegaETH",
+      "chainId": 4326,
+      "externalId": "0x10e6",
+      "attributes": {
+        "external_id": "0x10e6",
+        "name": "MegaETH",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/megaeth.png"
+        },
+        "explorer": {
+          "name": "MegaETH Etherscan",
+          "token_url_format": "https://mega.etherscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://mega.etherscan.io/tx/{HASH}",
+          "home_url": "https://mega.etherscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.megaeth.com/rpc",
+            "wss://mainnet.megaeth.com/ws"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "metis-andromeda",
+      "name": "Metis Andromeda",
+      "chainId": 1088,
+      "externalId": "0x440",
+      "attributes": {
+        "external_id": "0x440",
+        "name": "Metis Andromeda",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/metis.png"
+        },
+        "explorer": {
+          "name": "blockscout",
+          "token_url_format": "https://andromeda-explorer.metis.io/token/{ADDRESS}",
+          "tx_url_format": "https://andromeda-explorer.metis.io/tx/{HASH}",
+          "home_url": "https://andromeda-explorer.metis.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://andromeda.metis.io/?owner=1088",
+            "https://metis.drpc.org",
+            "wss://metis.drpc.org",
+            "https://metis-rpc.publicnode.com",
+            "wss://metis-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "mode",
+      "name": "Mode",
+      "chainId": 34443,
+      "externalId": "0x868b",
+      "attributes": {
+        "external_id": "0x868b",
+        "name": "Mode",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/mode.png"
+        },
+        "explorer": {
+          "name": "Blockscout",
+          "token_url_format": "https://explorer.mode.network/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.mode.network/tx/{HASH}",
+          "home_url": "https://explorer.mode.network"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.mode.network",
+            "https://mode.drpc.org",
+            "wss://mode.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "monad",
+      "name": "Monad",
+      "chainId": 143,
+      "externalId": "0x8f",
+      "attributes": {
+        "external_id": "0x8f",
+        "name": "Monad",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/monad.png"
+        },
+        "explorer": {
+          "name": "Monad Vision",
+          "token_url_format": "https://monadvision.com/token/{ADDRESS}",
+          "tx_url_format": "https://monadvision.com/tx/{HASH}",
+          "home_url": "https://monadvision.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.monad.xyz"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "okbchain",
+      "name": "X Layer",
+      "chainId": 196,
+      "externalId": "0xc4",
+      "attributes": {
+        "external_id": "0xc4",
+        "name": "X Layer",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/okx.png"
+        },
+        "explorer": {
+          "name": "OKLink",
+          "token_url_format": "https://www.oklink.com/xlayer/token/{ADDRESS}",
+          "tx_url_format": "https://www.oklink.com/xlayer/tx/{HASH}",
+          "home_url": "https://www.oklink.com/xlayer"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.xlayer.tech",
+            "https://xlayerrpc.okx.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "opbnb",
+      "name": "opBNB",
+      "chainId": 204,
+      "externalId": "0xcc",
+      "attributes": {
+        "external_id": "0xcc",
+        "name": "opBNB",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/opBNB.png"
+        },
+        "explorer": {
+          "name": "opbnbscan",
+          "token_url_format": "https://mainnet.opbnbscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://mainnet.opbnbscan.com/tx/{HASH}",
+          "home_url": "https://mainnet.opbnbscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://opbnb-mainnet-rpc.bnbchain.org",
+            "https://opbnb-mainnet.nodereal.io/v1/64a9df0874fb4a93b9d0a3849de012d3",
+            "wss://opbnb-mainnet.nodereal.io/ws/v1/64a9df0874fb4a93b9d0a3849de012d3",
+            "https://opbnb-mainnet.nodereal.io/v1/e9a36765eb8a40b9bd12e680a1fd2bc5",
+            "wss://opbnb-mainnet.nodereal.io/ws/v1/e9a36765eb8a40b9bd12e680a1fd2bc5",
+            "https://opbnb-rpc.publicnode.com",
+            "wss://opbnb-rpc.publicnode.com",
+            "https://opbnb.drpc.org",
+            "wss://opbnb.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "optimism",
+      "name": "Optimism",
+      "chainId": 10,
+      "externalId": "0xa",
+      "attributes": {
+        "external_id": "0xa",
+        "name": "Optimism",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/optimism.png"
+        },
+        "explorer": {
+          "name": "etherscan",
+          "token_url_format": "https://optimistic.etherscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://optimistic.etherscan.io/tx/{HASH}",
+          "home_url": "https://optimistic.etherscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.optimism.io",
+            "https://optimism-rpc.publicnode.com",
+            "wss://optimism-rpc.publicnode.com",
+            "https://optimism.gateway.tenderly.co",
+            "wss://optimism.gateway.tenderly.co",
+            "https://optimism.drpc.org",
+            "wss://optimism.drpc.org",
+            "https://xrpc.cl/optimism"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "plasma",
+      "name": "Plasma",
+      "chainId": 9745,
+      "externalId": "0x2611",
+      "attributes": {
+        "external_id": "0x2611",
+        "name": "Plasma",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/plasma.png"
+        },
+        "explorer": {
+          "name": "Routescan",
+          "token_url_format": "https://plasmascan.to/token/{ADDRESS}",
+          "tx_url_format": "https://plasmascan.to/tx/{HASH}",
+          "home_url": "https://plasmascan.to"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.plasma.to"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "polygon",
+      "name": "Polygon",
+      "chainId": 137,
+      "externalId": "0x89",
+      "attributes": {
+        "external_id": "0x89",
+        "name": "Polygon",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/polygon.png"
+        },
+        "explorer": {
+          "name": "polygonscan",
+          "token_url_format": "https://polygonscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://polygonscan.com/tx/{HASH}",
+          "home_url": "https://polygonscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://polygon.drpc.org",
+            "wss://polygon.drpc.org",
+            "https://rpc-mainnet.matic.quiknode.pro",
+            "https://polygon-bor-rpc.publicnode.com",
+            "wss://polygon-bor-rpc.publicnode.com",
+            "https://polygon.gateway.tenderly.co",
+            "wss://polygon.gateway.tenderly.co",
+            "https://rpc.satelink.network/rpc/polygon",
+            "https://rpcfree.com/polygon-rpc",
+            "wss://rpc.satelink.network/rpc/ws/polygon",
+            "https://xrpc.cl/polygon"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "polygon-zkevm",
+      "name": "Polygon zkEVM",
+      "chainId": 1101,
+      "externalId": "0x44d",
+      "attributes": {
+        "external_id": "0x44d",
+        "name": "Polygon zkEVM",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/1101"
+        },
+        "explorer": {
+          "name": "blockscout",
+          "token_url_format": "https://zkevm.polygonscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://zkevm.polygonscan.com/tx/{HASH}",
+          "home_url": "https://zkevm.polygonscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://zkevm-rpc.com",
+            "https://polygon-zkevm.drpc.org",
+            "wss://polygon-zkevm.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "polynomial",
+      "name": "Polynomial",
+      "chainId": 8008,
+      "externalId": "0x1f48",
+      "attributes": {
+        "external_id": "0x1f48",
+        "name": "Polynomial",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/polynomial.png"
+        },
+        "explorer": {
+          "name": "PolynomialExplorer",
+          "token_url_format": "https://polynomialscan.io//token/{ADDRESS}",
+          "tx_url_format": "https://polynomialscan.io//tx/{HASH}",
+          "home_url": "https://polynomialscan.io/"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.polynomial.fi"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "rari",
+      "name": "Rari",
+      "chainId": 1380012617,
+      "externalId": "0x52415249",
+      "attributes": {
+        "external_id": "0x52415249",
+        "name": "Rari",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/1380012617"
+        },
+        "explorer": {
+          "name": "rarichain-explorer",
+          "token_url_format": "https://mainnet.explorer.rarichain.org/token/{ADDRESS}",
+          "tx_url_format": "https://mainnet.explorer.rarichain.org/tx/{HASH}",
+          "home_url": "https://mainnet.explorer.rarichain.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rari.calderachain.xyz/http"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "re-al",
+      "name": "re.al",
+      "chainId": 111188,
+      "externalId": "0x1b254",
+      "attributes": {
+        "external_id": "0x1b254",
+        "name": "re.al",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/real.png"
+        },
+        "explorer": {
+          "name": "blockscout",
+          "token_url_format": "https://explorer.re.al/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.re.al/tx/{HASH}",
+          "home_url": "https://explorer.re.al"
+        },
+        "rpc": null,
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": false,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "redstone",
+      "name": "Redstone",
+      "chainId": 690,
+      "externalId": "0x2b2",
+      "attributes": {
+        "external_id": "0x2b2",
+        "name": "Redstone",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/redstone.png"
+        },
+        "explorer": {
+          "name": "blockscout",
+          "token_url_format": "https://explorer.redstone.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.redstone.xyz/tx/{HASH}",
+          "home_url": "https://explorer.redstone.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.redstonechain.com",
+            "wss://rpc.redstonechain.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "robinhood",
+      "name": "Robinhood",
+      "chainId": 4663,
+      "externalId": "0x1237",
+      "attributes": {
+        "external_id": "0x1237",
+        "name": "Robinhood",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/robinhood.png"
+        },
+        "explorer": {
+          "name": "robinscan",
+          "token_url_format": "https://robinscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://robinscan.io/tx/{HASH}",
+          "home_url": "https://robinscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://robinhood-rpc.publicnode.com",
+            "https://rpc.mainnet.chain.robinhood.com",
+            "wss://robinhood-rpc.publicnode.com",
+            "https://rpc.arrowrpc.com",
+            "https://rpc.ordofi.network",
+            "wss://rpc.ordofi.network",
+            "https://robinhood.drpc.org",
+            "wss://robinhood.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "ronin",
+      "name": "Ronin",
+      "chainId": 2020,
+      "externalId": "0x7e4",
+      "attributes": {
+        "external_id": "0x7e4",
+        "name": "Ronin",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/2020"
+        },
+        "explorer": {
+          "name": "Ronin Block Explorer",
+          "token_url_format": "https://app.roninchain.com/token/{ADDRESS}",
+          "tx_url_format": "https://app.roninchain.com/tx/{HASH}",
+          "home_url": "https://app.roninchain.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://api.roninchain.com/rpc"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "scroll",
+      "name": "Scroll",
+      "chainId": 534352,
+      "externalId": "0x82750",
+      "attributes": {
+        "external_id": "0x82750",
+        "name": "Scroll",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/scroll.png"
+        },
+        "explorer": {
+          "name": "Scrollscan",
+          "token_url_format": "https://scrollscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://scrollscan.com/tx/{HASH}",
+          "home_url": "https://scrollscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.scroll.io",
+            "https://rpc.ankr.com/scroll",
+            "https://scroll-mainnet.chainstacklabs.com",
+            "https://scroll-rpc.publicnode.com",
+            "wss://scroll-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "sei",
+      "name": "Sei",
+      "chainId": 1329,
+      "externalId": "0x531",
+      "attributes": {
+        "external_id": "0x531",
+        "name": "Sei",
+        "icon": {
+          "url": "https://protocol-icons.s3.amazonaws.com/icons/sei.png"
+        },
+        "explorer": {
+          "name": "Seiscan",
+          "token_url_format": "https://seiscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://seiscan.io/tx/{HASH}",
+          "home_url": "https://seiscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://evm-rpc.sei-apis.com",
+            "wss://evm-ws.sei-apis.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "solana",
+      "name": "Solana",
+      "chainId": 101,
+      "externalId": "0x65",
+      "attributes": {
+        "external_id": "0x65",
+        "name": "Solana",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/solana.png"
+        },
+        "explorer": {
+          "name": "Solscan",
+          "token_url_format": "https://solscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://solscan.io/tx/{HASH}",
+          "home_url": "https://solscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://free.rpcpool.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "somnia",
+      "name": "Somnia",
+      "chainId": 5031,
+      "externalId": "0x13a7",
+      "attributes": {
+        "external_id": "0x13a7",
+        "name": "Somnia",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/somnia.png"
+        },
+        "explorer": {
+          "name": "Somnia Mainnet",
+          "token_url_format": "https://mainnet.somnia.w3us.site/token/{ADDRESS}",
+          "tx_url_format": "https://mainnet.somnia.w3us.site/tx/{HASH}",
+          "home_url": "https://mainnet.somnia.w3us.site"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://api.infra.mainnet.somnia.network"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "soneium",
+      "name": "Soneium",
+      "chainId": 1868,
+      "externalId": "0x74c",
+      "attributes": {
+        "external_id": "0x74c",
+        "name": "Soneium",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/soneium.png"
+        },
+        "explorer": {
+          "name": "blockscout",
+          "token_url_format": "https://soneium.blockscout.com/token/{ADDRESS}",
+          "tx_url_format": "https://soneium.blockscout.com/tx/{HASH}",
+          "home_url": "https://soneium.blockscout.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.soneium.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "sonic",
+      "name": "Sonic",
+      "chainId": 146,
+      "externalId": "0x92",
+      "attributes": {
+        "external_id": "0x92",
+        "name": "Sonic",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/sonic_s.png"
+        },
+        "explorer": {
+          "name": "etherscan",
+          "token_url_format": "https://sonicscan.org/token/{ADDRESS}",
+          "tx_url_format": "https://sonicscan.org/tx/{HASH}",
+          "home_url": "https://sonicscan.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.soniclabs.com",
+            "https://sonic-rpc.publicnode.com",
+            "wss://sonic-rpc.publicnode.com",
+            "https://sonic.drpc.org",
+            "wss://sonic.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "swellchain",
+      "name": "Swellchain",
+      "chainId": 1923,
+      "externalId": "0x783",
+      "attributes": {
+        "external_id": "0x783",
+        "name": "Swellchain",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/swellchain.png"
+        },
+        "explorer": {
+          "name": "Swell Explorer",
+          "token_url_format": "https://explorer.swellnetwork.io//token/{ADDRESS}",
+          "tx_url_format": "https://explorer.swellnetwork.io//tx/{HASH}",
+          "home_url": "https://explorer.swellnetwork.io/"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://swell-mainnet.alt.technology",
+            "https://rpc.ankr.com/swell"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "taiko",
+      "name": "Taiko",
+      "chainId": 167000,
+      "externalId": "0x28c58",
+      "attributes": {
+        "external_id": "0x28c58",
+        "name": "Taiko",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/taiko.png"
+        },
+        "explorer": {
+          "name": "etherscan",
+          "token_url_format": "https://taikoscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://taikoscan.io/tx/{HASH}",
+          "home_url": "https://taikoscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.mainnet.taiko.xyz",
+            "https://taiko-rpc.publicnode.com",
+            "wss://taiko-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "tempo",
+      "name": "Tempo",
+      "chainId": 4217,
+      "externalId": "0x1079",
+      "attributes": {
+        "external_id": "0x1079",
+        "name": "Tempo",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/tempo.png"
+        },
+        "explorer": {
+          "name": "tempo-explorer",
+          "token_url_format": "https://explore.tempo.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://explore.tempo.xyz/tx/{HASH}",
+          "home_url": "https://explore.tempo.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.mainnet.tempo.xyz",
+            "wss://rpc.mainnet.tempo.xyz"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": false,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "tomochain",
+      "name": "Viction",
+      "chainId": 88,
+      "externalId": "0x58",
+      "attributes": {
+        "external_id": "0x58",
+        "name": "Viction",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/viction.png"
+        },
+        "explorer": {
+          "name": "VicScan",
+          "token_url_format": "https://www.vicscan.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://www.vicscan.xyz/tx/{HASH}",
+          "home_url": "https://www.vicscan.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.viction.xyz"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "tron",
+      "name": "Tron",
+      "chainId": 728126428,
+      "externalId": "0x2b6653dc",
+      "attributes": {
+        "external_id": "0x2b6653dc",
+        "name": "Tron",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/tron.png"
+        },
+        "explorer": {
+          "name": "Tronscan",
+          "token_url_format": "https://tronscan.org/#/token20/{ADDRESS}",
+          "tx_url_format": "https://tronscan.org/#/transaction/{HASH}",
+          "home_url": "https://tronscan.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://api.trongrid.io/jsonrpc"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": false,
+          "supports_bridge": false,
+          "supports_transactions": false,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "unichain",
+      "name": "Unichain",
+      "chainId": 130,
+      "externalId": "0x82",
+      "attributes": {
+        "external_id": "0x82",
+        "name": "Unichain",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/unichain.png"
+        },
+        "explorer": {
+          "name": "Unichain Mainnet Explorer",
+          "token_url_format": "https://uniscan.xyz/token/{ADDRESS}",
+          "tx_url_format": "https://uniscan.xyz/tx/{HASH}",
+          "home_url": "https://uniscan.xyz"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.unichain.org",
+            "https://unichain-rpc.publicnode.com",
+            "wss://unichain-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "wonder",
+      "name": "Wonder",
+      "chainId": 9637,
+      "externalId": "0x25a5",
+      "attributes": {
+        "external_id": "0x25a5",
+        "name": "Wonder",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/9637"
+        },
+        "explorer": {
+          "name": "Wonder Block Explorer",
+          "token_url_format": "https://explorer.mainnet.wonderchain.org/address/{ADDRESS}",
+          "tx_url_format": "https://explorer.mainnet.wonderchain.org/tx/{HASH}",
+          "home_url": "https://explorer.mainnet.wonderchain.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.mainnet.wonderchain.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "world",
+      "name": "World Chain",
+      "chainId": 480,
+      "externalId": "0x1e0",
+      "attributes": {
+        "external_id": "0x1e0",
+        "name": "World Chain",
+        "icon": {
+          "url": "https://protocol-icons.s3.amazonaws.com/worldchain.png"
+        },
+        "explorer": {
+          "name": "etherscan",
+          "token_url_format": "https://worldscan.org/token/{ADDRESS}",
+          "tx_url_format": "https://worldscan.org/tx/{HASH}",
+          "home_url": "https://worldscan.org"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://worldchain-mainnet.g.alchemy.com/public",
+            "https://480.rpc.thirdweb.com",
+            "https://worldchain-mainnet.gateway.tenderly.co",
+            "wss://worldchain-mainnet.gateway.tenderly.co"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "xdai",
+      "name": "Gnosis Chain",
+      "chainId": 100,
+      "externalId": "0x64",
+      "attributes": {
+        "external_id": "0x64",
+        "name": "Gnosis Chain",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/xdai.png"
+        },
+        "explorer": {
+          "name": "gnosisscan",
+          "token_url_format": "https://gnosisscan.io/token/{ADDRESS}",
+          "tx_url_format": "https://gnosisscan.io/tx/{HASH}",
+          "home_url": "https://gnosisscan.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://gnosis-rpc.publicnode.com",
+            "https://rpc.gnosischain.com",
+            "https://rpc.gnosis.gateway.fm",
+            "https://rpc.ankr.com/gnosis",
+            "https://gnosischain-rpc.gateway.pokt.network",
+            "https://gnosis-mainnet.public.blastapi.io",
+            "https://gnosis.api.onfinality.io/public",
+            "https://gnosis.blockpi.network/v1/rpc/public",
+            "https://web3endpoints.com/gnosischain-mainnet",
+            "https://gnosis.oat.farm",
+            "wss://rpc.gnosischain.com/wss",
+            "wss://gnosis-rpc.publicnode.com"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "xinfin-xdc",
+      "name": "XDC",
+      "chainId": 50,
+      "externalId": "0x32",
+      "attributes": {
+        "external_id": "0x32",
+        "name": "XDC",
+        "icon": {
+          "url": "https://chain-icons.s3.us-east-1.amazonaws.com/xdc.png"
+        },
+        "explorer": {
+          "name": "xdcscan",
+          "token_url_format": "https://xdcscan.com/token/{ADDRESS}",
+          "tx_url_format": "https://xdcscan.com/tx/{HASH}",
+          "home_url": "https://xdcscan.com"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://erpc.xinfin.network",
+            "https://rpc.xinfin.network",
+            "https://rpc1.xinfin.network",
+            "https://rpc.xdcrpc.com",
+            "https://erpc.xdcrpc.com",
+            "https://rpc.ankr.com/xdc",
+            "https://rpc.xdc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "zero",
+      "name": "ZERϴ",
+      "chainId": 543210,
+      "externalId": "0x849ea",
+      "attributes": {
+        "external_id": "0x849ea",
+        "name": "ZERϴ",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/543210"
+        },
+        "explorer": {
+          "name": "ZERO Network Explorer",
+          "token_url_format": "https://explorer.zero.network/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.zero.network/tx/{HASH}",
+          "home_url": "https://explorer.zero.network"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.zerion.io/v1/zero"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": false,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "zkcandy",
+      "name": "ZKcandy",
+      "chainId": 320,
+      "externalId": "0x140",
+      "attributes": {
+        "external_id": "0x140",
+        "name": "ZKcandy",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/zkcandy.png"
+        },
+        "explorer": {
+          "name": "ZKcandy Block Explorer",
+          "token_url_format": "https://explorer.zkcandy.io/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.zkcandy.io/tx/{HASH}",
+          "home_url": "https://explorer.zkcandy.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.zkcandy.io"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "zklink-nova",
+      "name": "ZkLink Nova",
+      "chainId": 810180,
+      "externalId": "0xc5cc4",
+      "attributes": {
+        "external_id": "0xc5cc4",
+        "name": "ZkLink Nova",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/zklink.png"
+        },
+        "explorer": {
+          "name": "zkLink Nova Block Explorer",
+          "token_url_format": "https://explorer.zklink.io/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.zklink.io/tx/{HASH}",
+          "home_url": "https://explorer.zklink.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.zklink.io",
+            "wss://rpc.zklink.io"
+          ]
+        },
+        "flags": {
+          "supports_trading": false,
+          "supports_sending": true,
+          "supports_bridge": false,
+          "supports_transactions": true,
+          "supports_positions": false,
+          "supports_nft_positions": false
+        }
+      }
+    },
+    {
+      "id": "zksync-era",
+      "name": "ZKsync Era",
+      "chainId": 324,
+      "externalId": "0x144",
+      "attributes": {
+        "external_id": "0x144",
+        "name": "ZKsync Era",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/chainlist/324"
+        },
+        "explorer": {
+          "name": "zkSync Era Block Explorer",
+          "token_url_format": "https://explorer.zksync.io/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.zksync.io/tx/{HASH}",
+          "home_url": "https://explorer.zksync.io"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://mainnet.era.zksync.io",
+            "https://zksync.drpc.org",
+            "wss://zksync.drpc.org"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    },
+    {
+      "id": "zora",
+      "name": "Zora",
+      "chainId": 7777777,
+      "externalId": "0x76adf1",
+      "attributes": {
+        "external_id": "0x76adf1",
+        "name": "Zora",
+        "icon": {
+          "url": "https://chain-icons.s3.amazonaws.com/zora"
+        },
+        "explorer": {
+          "name": "Zora Network Explorer",
+          "token_url_format": "https://explorer.zora.energy/token/{ADDRESS}",
+          "tx_url_format": "https://explorer.zora.energy/tx/{HASH}",
+          "home_url": "https://explorer.zora.energy"
+        },
+        "rpc": {
+          "public_servers_url": [
+            "https://rpc.zora.energy/"
+          ]
+        },
+        "flags": {
+          "supports_trading": true,
+          "supports_sending": true,
+          "supports_bridge": true,
+          "supports_transactions": true,
+          "supports_positions": true,
+          "supports_nft_positions": true
+        }
+      }
+    }
+  ]
+}

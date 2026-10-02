@@ -173,13 +173,17 @@ export function createZerionClient(options: ZerionClientOptions = {}): ZerionCli
     address: string,
     { chain, from, to }: { chain: number; from: Date; to: Date },
   ): Promise<TransactionListing> {
+    const fromMs = from.getTime()
+    const toMs = to.getTime()
+    // The window goes to Zerion as Unix milliseconds, so a busy wallet's newest-first listing does
+    // not spend the page cap on transactions after the window.
     const params = {
       'filter[chain_ids]': await zerionChainId(chain),
+      'filter[min_mined_at]': String(fromMs),
+      'filter[max_mined_at]': String(toMs),
       'page[size]': String(pageSize),
       currency: 'usd',
     }
-    const fromMs = from.getTime()
-    const toMs = to.getTime()
     const transactions: ZerionTransaction[] = []
     let page = await request<JsonApiPage<ZerionTransaction>>(`/wallets/${encodeURIComponent(address)}/transactions/`, params)
     for (let pages = 1; ; pages++) {
@@ -189,8 +193,9 @@ export function createZerionClient(options: ZerionClientOptions = {}): ZerionCli
         const at = times[i]!
         if (Number.isFinite(at) && at >= fromMs && at <= toMs) transactions.push(t)
       })
-      // Server-side time filters are not used until verified live. Stop early only when this page
-      // is newest-first and already reaches past the window start.
+      // The server-side filters above are trusted only as far as this guard: every row is still
+      // checked against the window here. Stop early only when this page is newest-first and
+      // already reaches past the window start.
       const descending = times.every((t, i) => i === 0 || (Number.isFinite(t) && t <= times[i - 1]!))
       const oldest = Math.min(...times.filter(Number.isFinite))
       const next = page.links?.next
