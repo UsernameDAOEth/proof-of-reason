@@ -160,8 +160,10 @@ instead, and `docs/MONAD.md` section 13 says exactly which kinds are which.
 
 ## Pre-registered, before any code
 
-The hypothesis, the kill thresholds and the gate dates were registered on 2026-09-17, before any
-product code was written.
+The hypothesis, the kill thresholds and the gate dates were written down before any product code.
+The file says it was registered on 2026-09-17. It is the first commit in this repository, `073cceb`,
+dated 2026-09-18, and its sha256 below was first posted publicly on 2026-09-25:
+[the post](https://x.com/Djzs_ai/status/2103540228128694716).
 
 | | |
 | --- | --- |
