@@ -219,7 +219,7 @@ How the issuer handles being wrong:
 <h2>Known limits</h2>
 <ul class="plain">
 <li>One validator key today; every verdict is on the registry and re-checkable by anyone, and a second validator is the roadmap.</li>
-<li>What the gate still trusts the validator for: the observations the chain cannot re-read, rates above all, at the pinned block, and that the signed tally counts what the receipt shows. Both are checkable afterwards against an archive node. Utilization, liquidity and the Kuru book are re-read by the chain at execution, and the rule that turns counts into an outcome is compiled into the gate.</li>
+<li>What the gate still trusts the validator for: the observations the chain cannot re-read, rates above all, at the pinned block, and that the signed tally counts what the receipt shows. Both are checkable afterwards through an RPC that still holds state at the pinned block, such as https://rpc-mainnet.monadinfra.com. Utilization, liquidity and the Kuru book are re-read by the chain at execution, and the rule that turns counts into an outcome is compiled into the gate.</li>
 <li>The validator sees an agent's calldata and claims before the chain does. A dishonest validator could trade on that. Today the answer is a policy, not a mechanism: no copy of non-PASS intents beyond their receipts, and no trading on gate inputs. A second validator or an enclave would replace the policy.</li>
 <li>The check judges premises and mandate, not whether the decision is wise.</li>
 <li>The registry is interim until Monad's canonical ERC-8004 validation registry ships.</li>

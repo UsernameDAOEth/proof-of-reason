@@ -158,7 +158,7 @@ utilization or liquidity at execution, not the validator's.
 Rate claims are not re-asserted on chain; they are re-run by the verifier at the pinned block
 instead, and `docs/MONAD.md` section 13 says exactly which kinds are which.
 Re-read the observed values at the receipt's pinned block through https://rpc-mainnet.monadinfra.com,
-because the public node forgets state after about 5.6 days.
+because the public node forgets state after about 5.6 days (measured 2026-09-30 UTC).
 
 ## Pre-registered, before any code
 

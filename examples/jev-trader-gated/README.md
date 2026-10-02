@@ -70,7 +70,7 @@ Read-only. Nothing is signed, nothing is sent, no key is read or created.
 pnpm install
 node dry-run.ts                  # a buy answer on the live book
 ANSWER=SHORT node dry-run.ts     # an answer the mandate does not list
-MONAD_RPC_URL=<archive rpc> node dry-run.ts
+MONAD_RPC_URL=https://rpc-mainnet.monadinfra.com node dry-run.ts   # must hold state at the blocks you query
 ```
 
 It reads the head, pins three blocks behind it, reads `getMarketParams`, `bestBidAsk`, `getL2Book`
