@@ -69,3 +69,8 @@ At a read, a threshold whose minimum is not met is reported with the counts and 
 The fit gate reads A1 on its own date, from every action counted by then. A pass at an earlier read does not carry forward.
 
 Disclosed because it favours the hypothesis: docs/SHADOW.md counted every located record. Counting fewer raises the rate and makes the kill's 200 slower to reach. The reason for it: an action whose premises could not be checked was not audited against the state it cites, which is what A1's test asks for. One rule works the other way: reading the block before the action removes FALSE results that the action's own effect would have caused.
+
+## Amendment 2 (2026-10-05): one wallet listed twice
+Reason: Amendment 1 says a mistake in shadow/AGENTS.md is fixed by a new row that counts from its own listing time. For a wallet and chain already listed, such a row would move the agent's listing time, so it could drop actions already counted, or bar the agent, after its actions are known. Written before any agent was listed in shadow/AGENTS.md and before any record was added to shadow/records.
+
+When a wallet and chain appear in more than one row of shadow/AGENTS.md, the earliest of those rows decides which of the agent's actions count and whether the agent was audited before its listing. A later row for the same wallet and chain changes only the agent's name, type, or where it explains its actions, and every read lists each such correction. A row for a wallet and chain not listed before is a new agent and counts from its own listing time. This removes a choice from whoever keeps the list; it favours neither outcome.
