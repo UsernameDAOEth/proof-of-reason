@@ -13,3 +13,8 @@ allowBuilds:
   # envio's codegen compiler, used only inside envio/.
   rescript: true
   workerd: true
+# Security: Dependabot alerts on transitive deps, patched within the same major.
+# undici via wrangler > miniflare (pins 7.29.0); ws via envio > viem@2.21.0 (pins 8.17.1).
+overrides:
+  "undici@>=7.0.0 <7.29.1": 7.29.1
+  "ws@>=8.0.0 <8.21.0": 8.21.0
