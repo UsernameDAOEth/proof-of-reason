@@ -10,7 +10,7 @@ export type LocateOptions = {
   windowBeforeSeconds: number
   /** Seconds after posted_at to search. A record's own window overrides. */
   windowAfterSeconds: number
-  /** At most this many candidates, closest to posted_at by Zerion time, are checked on chain. */
+  /** Every candidate is checked on chain; more candidates than this and uniqueness is not checked. */
   maxCandidates: number
 }
 
@@ -19,6 +19,8 @@ export const DEFAULT_LOCATE_OPTIONS: LocateOptions = {
   windowAfterSeconds: 3600,
   maxCandidates: 25,
 }
+
+export const NO_MATCH = 'no matching transaction in the window'
 
 export type LocatedTx = {
   status: 'LOCATED'
@@ -54,7 +56,8 @@ function sameAddress(a: string | null | undefined, b: string | null | undefined)
 }
 
 /** Checks one transaction against the record on chain. Returns why it fails, or null. */
-function mismatch(record: ClaimRecordV0, tx: TxInfo): string | null {
+function mismatch(record: ClaimRecordV0, tx: TxInfo | null): string | null {
+  if (tx === null) return 'transaction not found on chain'
   if (!sameAddress(tx.from, record.agent.wallet)) return 'sender is not the agent wallet'
   if (!tx.success) return 'transaction reverted'
   if (record.target?.contract !== undefined && !sameAddress(tx.to, record.target.contract)) return 'target contract differs'
@@ -85,17 +88,25 @@ function locatedFrom(tx: TxInfo, timestamp: bigint, postedMs: number): LocatedTx
 }
 
 /**
- * Finds the agent's transaction closest to posted_at within the window. Zerion only lists
- * candidate hashes. The chain decides sender, success, target, method, block, and timestamp,
- * and the chain timestamp decides "closest". Ties go to the earlier transaction.
+ * Finds the action a statement refers to (PREREG Amendment 1, "Which transaction").
+ * With tx_hash, the action is that transaction, checked on chain with no window. Without it,
+ * Zerion lists candidate hashes in the window and every candidate is checked on chain: the
+ * record is LOCATED only when exactly one passes. The nearest match is never chosen. The chain
+ * decides sender, success, target, method, block, and timestamp.
  */
 export async function locate(
   record: ClaimRecordV0,
   deps: { zerion: Pick<ZerionClient, 'listTransactions'>; tx: TxReader; chainId: number; options?: Partial<LocateOptions> },
 ): Promise<LocateResult> {
+  if (record.tx_hash !== undefined) return locateByHash(record, record.tx_hash.toLowerCase() as Hex, deps.tx)
+
   const options = { ...DEFAULT_LOCATE_OPTIONS, ...deps.options }
   const { postedMs, fromMs, toMs } = windowOf(record, options)
   const emptyListing = { pages: 0, truncated: false, listed: 0, candidates: 0, checkedOnChain: 0 }
+  const unlocated = (reason: string, listing = emptyListing): LocateResult => ({
+    located: { status: 'UNLOCATED', reason },
+    context: { transaction: null, listing },
+  })
 
   let listing
   try {
@@ -105,9 +116,7 @@ export async function locate(
       to: new Date(toMs),
     })
   } catch (error) {
-    if (error instanceof ZerionUnsupportedChain) {
-      return { located: { status: 'UNLOCATED', reason: error.message }, context: { transaction: null, listing: emptyListing } }
-    }
+    if (error instanceof ZerionUnsupportedChain) return unlocated(error.message)
     throw error
   }
 
@@ -115,55 +124,56 @@ export async function locate(
     .filter((t) => HASH.test(t.attributes?.hash ?? ''))
     .filter((t) => t.attributes?.status === 'confirmed')
     .filter((t) => t.attributes?.sent_from === undefined || sameAddress(t.attributes.sent_from, record.agent.wallet))
-    .map((t) => ({ t, at: Date.parse(t.attributes.mined_at ?? '') }))
-    .filter(({ at }) => Number.isFinite(at) && at >= fromMs && at <= toMs)
-    .sort((a, b) => Math.abs(a.at - postedMs) - Math.abs(b.at - postedMs) || a.at - b.at || a.t.attributes.hash!.localeCompare(b.t.attributes.hash!))
-    .slice(0, options.maxCandidates)
-
-  const verified: { tx: TxInfo; ts: bigint; zerion: ZerionTransaction }[] = []
-  for (const { t } of candidates) {
-    const tx = await deps.tx.getTransaction(t.attributes.hash as Hex)
-    if (mismatch(record, tx) !== null) continue
-    const ts = await deps.tx.getBlockTimestamp(tx.blockNumber)
-    const tsMs = Number(ts) * 1000
-    if (tsMs < fromMs || tsMs > toMs) continue
-    verified.push({ tx, ts, zerion: t })
-  }
+    .filter((t) => {
+      const at = Date.parse(t.attributes.mined_at ?? '')
+      return Number.isFinite(at) && at >= fromMs && at <= toMs
+    })
   const stats = {
     pages: listing.pages,
     truncated: listing.truncated,
     listed: listing.transactions.length,
     candidates: candidates.length,
-    checkedOnChain: candidates.length,
+    checkedOnChain: 0,
   }
 
-  verified.sort(
-    (a, b) =>
-      Math.abs(Number(a.ts) * 1000 - postedMs) - Math.abs(Number(b.ts) * 1000 - postedMs) ||
-      Number(a.ts - b.ts) ||
-      Number(a.tx.blockNumber - b.tx.blockNumber) ||
-      a.tx.hash.localeCompare(b.tx.hash),
-  )
-  const best = verified[0]
-  if (best === undefined) {
-    const reason =
-      candidates.length === 0
-        ? `no confirmed transaction from the wallet within the window${listing.truncated ? ' (listing truncated)' : ''}`
-        : 'no candidate matched the record on chain'
-    return { located: { status: 'UNLOCATED', reason }, context: { transaction: null, listing: stats } }
+  if (listing.truncated) {
+    return unlocated('the Zerion listing was truncated, so uniqueness could not be checked', stats)
   }
-  return { located: locatedFrom(best.tx, best.ts, postedMs), context: { transaction: best.zerion, listing: stats } }
+  if (candidates.length > options.maxCandidates) {
+    return unlocated(
+      `${candidates.length} candidates exceed maxCandidates ${options.maxCandidates}, so uniqueness could not be checked`,
+      stats,
+    )
+  }
+
+  const matches: { tx: TxInfo; ts: bigint; zerion: ZerionTransaction }[] = []
+  for (const t of candidates) {
+    const tx = await deps.tx.getTransaction(t.attributes.hash as Hex)
+    stats.checkedOnChain++
+    if (tx === null || mismatch(record, tx) !== null) continue
+    const ts = await deps.tx.getBlockTimestamp(tx.blockNumber)
+    const tsMs = Number(ts) * 1000
+    if (tsMs < fromMs || tsMs > toMs) continue
+    matches.push({ tx, ts, zerion: t })
+  }
+
+  if (matches.length === 0) return unlocated(NO_MATCH, stats)
+  if (matches.length > 1) return unlocated(`ambiguous: ${matches.length} transactions match`, stats)
+  const only = matches[0]!
+  return { located: locatedFrom(only.tx, only.ts, postedMs), context: { transaction: only.zerion, listing: stats } }
 }
 
 /**
- * Re-locates a recorded transaction by its hash, from the chain alone. Used to re-run a record
- * without Zerion (docs/SHADOW.md).
+ * Locates a record by a transaction hash, from the chain alone: the hash the statement gives, or
+ * the recorded hash when a record is re-run without Zerion (docs/SHADOW.md). No window applies.
  */
 export async function locateByHash(record: ClaimRecordV0, hash: Hex, tx: TxReader): Promise<LocateResult> {
   const info = await tx.getTransaction(hash)
   const reason = mismatch(record, info)
   const listing = { pages: 0, truncated: false, listed: 0, candidates: 1, checkedOnChain: 1 }
-  if (reason !== null) return { located: { status: 'UNLOCATED', reason }, context: { transaction: null, listing } }
+  if (reason !== null || info === null) {
+    return { located: { status: 'UNLOCATED', reason: reason ?? 'transaction not found on chain' }, context: { transaction: null, listing } }
+  }
   const ts = await tx.getBlockTimestamp(info.blockNumber)
   return { located: locatedFrom(info, ts, Date.parse(record.posted_at)), context: { transaction: null, listing } }
 }

@@ -1,4 +1,4 @@
-import { createPublicClient, http } from 'viem'
+import { TransactionNotFoundError, TransactionReceiptNotFoundError, createPublicClient, http } from 'viem'
 import type { Address, Chain, Hex } from 'viem'
 import { base, mainnet, monad } from 'viem/chains'
 import type { AuditReaders } from 'proof-of-reason-engine/audit'
@@ -18,7 +18,8 @@ export type TxInfo = {
 }
 
 export interface TxReader {
-  getTransaction(hash: Hex): Promise<TxInfo>
+  /** null when the chain has no such transaction. Any other read failure throws. */
+  getTransaction(hash: Hex): Promise<TxInfo | null>
   getBlockTimestamp(block: bigint): Promise<bigint>
 }
 
@@ -50,8 +51,15 @@ export function viemReaders(chain: ChainConfig, env: NodeJS.ProcessEnv = process
     erc20: viemErc20Reader(client),
     tx: {
       async getTransaction(hash) {
-        const tx = await client.getTransaction({ hash })
-        const receipt = await client.getTransactionReceipt({ hash })
+        let tx
+        let receipt
+        try {
+          tx = await client.getTransaction({ hash })
+          receipt = await client.getTransactionReceipt({ hash })
+        } catch (error) {
+          if (error instanceof TransactionNotFoundError || error instanceof TransactionReceiptNotFoundError) return null
+          throw error
+        }
         if (tx.blockNumber === null) throw new Error('transaction is pending')
         return {
           hash: tx.hash,

@@ -19,7 +19,7 @@ import type { ClaimRecordV0 } from './record.ts'
 import { ZerionError, createZerionClient } from './zerion.ts'
 
 export const SHADOW_SCHEMA = 'proof-of-reason/shadow-record/v0'
-export const SHADOW_VERSION = '0.1.0'
+export const SHADOW_VERSION = '0.2.0'
 export const NO_TYPED_CLAIMS = 'no typed claims: prose extraction is not configured'
 
 export type ShadowStatus = 'TRUE' | 'FALSE' | 'UNVERIFIABLE' | 'UNLOCATED'
@@ -30,8 +30,11 @@ export type ShadowRecordBody = {
   engineVersion: string
   ruleset: string
   chainId: number
+  /** UTC time of the run, ISO 8601. Sealed; a re-run does not compare it. */
+  auditedAt: string
   record: ClaimRecordV0
   located: LocatedTx | Unlocated
+  /** The block every premise is read at: the action's block minus 1 (PREREG Amendment 1). */
   pinnedBlock: bigint | null
   observations: AnyObservation[]
   results: ClaimResult[]
@@ -72,12 +75,18 @@ export function recordJson(record: ShadowRecord): string {
 }
 
 /**
- * Audits one claim record: locate, observe every typed claim at the located block, compare, and
- * decide. `locateFn` is Zerion-backed in a normal run and chain-only in a re-run.
+ * Audits one claim record: locate, observe every typed claim at the block before the action's
+ * block, compare, and decide. `locateFn` is Zerion-backed in a normal run and chain-only in a
+ * re-run. `now` gives auditedAt and defaults to the clock.
  */
 export async function auditRecord(
   input: unknown,
-  deps: { readers: ShadowReaders; chainId: number; locateFn: (record: ClaimRecordV0) => Promise<LocateResult> },
+  deps: {
+    readers: ShadowReaders
+    chainId: number
+    locateFn: (record: ClaimRecordV0) => Promise<LocateResult>
+    now?: () => Date
+  },
 ): Promise<ShadowRecord> {
   const record = parseClaimRecord(input)
   const found = await deps.locateFn(record)
@@ -88,6 +97,7 @@ export async function auditRecord(
     engineVersion: ENGINE_VERSION,
     ruleset: RULESET,
     chainId: deps.chainId,
+    auditedAt: (deps.now ?? (() => new Date()))().toISOString(),
     record,
     located: found.located,
     context: { zerion: found.context.transaction === null && found.context.listing.pages === 0 ? null : found.context },
@@ -97,7 +107,9 @@ export async function auditRecord(
     return seal({ ...base, pinnedBlock: null, observations: [], results: [], verdict: null, status: 'UNLOCATED', notes })
   }
 
-  const pinnedBlock = found.located.blockNumber
+  // Reads end at the block before the action, so no reading includes what the action changed.
+  // located.blockNumber stays the action's block.
+  const pinnedBlock = found.located.blockNumber - 1n
   const claims = record.claims ?? []
   if (claims.length === 0) notes.push(NO_TYPED_CLAIMS)
   const observations = await observeAuditAll(deps.readers, claims, pinnedBlock)

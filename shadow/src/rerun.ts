@@ -9,8 +9,25 @@ import { locateByHash } from './locate.ts'
 import { auditRecord, safeError, verifySeal } from './run.ts'
 import type { ShadowRecord } from './run.ts'
 
-/** The fields a re-run must reproduce. The Zerion context and the seal are not among them. */
-export const RERUN_FIELDS = ['located', 'pinnedBlock', 'observations', 'results', 'verdict', 'status'] as const
+/**
+ * The fields a re-run must reproduce: every field except auditedAt (the time of the run), the
+ * Zerion context, and the seal.
+ */
+export const RERUN_FIELDS = [
+  'schema',
+  'shadowVersion',
+  'engineVersion',
+  'ruleset',
+  'chainId',
+  'record',
+  'located',
+  'pinnedBlock',
+  'observations',
+  'results',
+  'verdict',
+  'status',
+  'notes',
+] as const
 
 export type RerunReport = {
   sealValid: boolean
@@ -20,7 +37,7 @@ export type RerunReport = {
 
 /**
  * Re-runs a stored record from its JSON alone: the recorded tx hash is checked on chain, every
- * claim is observed again at the recorded block, and the result is compared field by field.
+ * claim is observed again at the block before it, and the result is compared field by field.
  * Zerion is not used.
  */
 export async function rerunRecord(stored: ShadowRecord, readers: ShadowReaders): Promise<RerunReport> {

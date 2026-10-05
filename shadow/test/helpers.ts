@@ -98,11 +98,9 @@ export class FakeTxReader implements TxReader {
     }
   }
 
-  async getTransaction(h: Hex): Promise<TxInfo> {
+  async getTransaction(h: Hex): Promise<TxInfo | null> {
     this.calls.push(`tx:${h}`)
-    const tx = this.txs.get(h)
-    if (tx === undefined) throw new Error(`unknown tx ${h}`)
-    return tx
+    return this.txs.get(h) ?? null
   }
 
   async getBlockTimestamp(block: bigint): Promise<bigint> {

@@ -6,6 +6,7 @@ import { AddressString, SchemaError } from 'proof-of-reason-engine/claims'
 
 const SELECTOR = /^0x[0-9a-fA-F]{8}$/
 const SIGNATURE = /^[A-Za-z_][A-Za-z0-9_]*\(.*\)$/
+const TX_HASH = /^0x[0-9a-fA-F]{64}$/
 const MAX_WINDOW_SECONDS = 7 * 24 * 3600
 
 /** 4-byte selector from a selector or a full function signature such as "reallocate(...)". */
@@ -18,6 +19,8 @@ export function methodSelector(method: string): Hex {
 /**
  * One public agent statement to audit. source_text is the reason copied verbatim from source_url.
  * Typed claims are audited; prose alone cannot be (no extractor is configured) and is recorded.
+ * tx_hash is set only when the statement itself gives the transaction (PREREG Amendment 1), so
+ * it must appear in source_text.
  */
 export const ClaimRecordV0 = z
   .strictObject({
@@ -27,6 +30,7 @@ export const ClaimRecordV0 = z
     source_url: z.url(),
     source_text: z.string().min(1),
     posted_at: z.iso.datetime({ offset: true }),
+    tx_hash: z.string().regex(TX_HASH, '0x plus 64 hex characters').optional(),
     claims: AuditClaims.optional(),
     prose: z.string().min(1).optional(),
     target: z
@@ -46,6 +50,10 @@ export const ClaimRecordV0 = z
       .optional(),
   })
   .refine((r) => r.claims !== undefined || r.prose !== undefined, 'send typed claims, prose, or both')
+  .refine((r) => r.tx_hash === undefined || r.source_text.toLowerCase().includes(r.tx_hash.toLowerCase()), {
+    message: 'tx_hash does not appear in source_text',
+    path: ['tx_hash'],
+  })
 
 export type ClaimRecordV0 = z.infer<typeof ClaimRecordV0>
 

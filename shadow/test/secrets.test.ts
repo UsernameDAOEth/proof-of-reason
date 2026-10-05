@@ -87,7 +87,7 @@ describe('ZERION_API_KEY never appears in logs, errors, or output files', () => 
     const dir = mkdtempSync(join(tmpdir(), 'shadow-secret-'))
     writeFileSync(join(dir, 'record.json'), recordJson(record))
     const ledgerPath = join(dir, 'LEDGER.md')
-    writeFileSync(ledgerPath, buildLedger(loadRecords(dir)))
+    writeFileSync(ledgerPath, buildLedger(loadRecords(dir), []))
     const files = readdirSync(dir).map((f) => readFileSync(join(dir, f), 'utf8'))
     expect(files).toHaveLength(2)
     expectNoSecret(files)

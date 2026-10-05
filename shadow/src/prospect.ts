@@ -62,7 +62,7 @@ export async function prospect(
       }
       checked++
       const tx = await deps.tx.getTransaction(hash as Hex)
-      if (!tx.success || tx.to === null || tx.from.toLowerCase() !== address.toLowerCase()) continue
+      if (tx === null || !tx.success || tx.to === null || tx.from.toLowerCase() !== address.toLowerCase()) continue
       const selector = tx.input.slice(0, 10).toLowerCase()
       if (selector !== REALLOCATE && selector !== ALLOCATE) continue
       let legs = 0
