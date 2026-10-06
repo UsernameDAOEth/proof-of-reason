@@ -245,10 +245,26 @@ describe('ledger: one wallet listed twice (PREREG Amendment 2)', () => {
     const after = countA1(records, twice('2026-10-09T00:00Z'))
     expect(after).toMatchObject({ counted: 2, falsePremise: 1, passBasis: 2, passFalse: 1 })
     expect([...after.reasons.values()]).toEqual([null, null])
-    // A later row with an earlier listing time does not move the listing time either.
-    const earlier = parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'trader', '2026-09-01T00:00Z')]))
-    const old = make('before-first-row', 'TRUE', [t('r1', 'TRUE')], { postedAt: '2026-09-20T00:00:00Z' })
-    expect(countA1([...records, old], earlier).reasons.get('before-first-row')).toBe('transaction not after listing')
+  })
+
+  it('a later row with an earlier listing time throws with both line numbers and both times', () => {
+    const md = agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(walletN(5), 'other'), row(WALLET, 'trader', '2026-09-30T23:59Z')])
+    expect(() => parseAgents(md)).toThrow(
+      'AGENTS.md line 9: listing time 2026-09-30T23:59Z is before 2026-10-01T00:00Z, the listing time on line 7 for the same wallet and chain',
+    )
+    // Compared with the first row, not only the row before it.
+    const third = agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'trader', '2026-10-05T00:00Z'), row(WALLET, 'trader', '2026-09-01T00:00Z')])
+    expect(() => parseAgents(third)).toThrow('AGENTS.md line 9: listing time 2026-09-01T00:00Z is before 2026-10-01T00:00Z, the listing time on line 7')
+  })
+
+  it('a later row with an equal or later listing time is accepted', () => {
+    const equal = parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'other', '2026-10-01T00:00Z')]))
+    expect(equal.map((r) => r.line)).toEqual([7, 8])
+    expect(corrections(equal)[0]).toMatchObject({ listed: '2026-10-01T00:00Z', type: 'other' })
+    const later = parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'other', '2026-10-01T00:01Z')]))
+    expect(corrections(later)[0]).toMatchObject({ listed: '2026-10-01T00:00Z', type: 'other' })
+    // The rule is per wallet and chain: the same wallet on another chain may carry an earlier time.
+    expect(parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'trader', '2026-09-01T00:00Z', 'monad')]))).toHaveLength(2)
   })
 
   it('lists every correction in LEDGER.md: wallet, chain, and each row with its line and listing time', () => {

@@ -48,6 +48,8 @@ function cells(line: string): string[] {
   return inner.split(/(?<!\\)\|/).map((c) => c.trim())
 }
 
+const agentKey = (wallet: string, chain: string) => `${wallet.toLowerCase()}|${chain}`
+
 const isDelimiter = (c: string[]) => c.length === HEADER.length && c.every((x) => /^:?-{3,}:?$/.test(x))
 
 function parseRow(text: string, line: number): AgentRow {
@@ -87,14 +89,24 @@ export function parseAgents(markdown: string): AgentRow[] {
   }
   const rows: AgentRow[] = []
   let i = header + 2
-  for (; i < lines.length && lines[i]!.trim() !== ''; i++) rows.push(parseRow(lines[i]!, i + 1))
+  const first = new Map<string, AgentRow>()
+  for (; i < lines.length && lines[i]!.trim() !== ''; i++) {
+    const row = parseRow(lines[i]!, i + 1)
+    const key = agentKey(row.wallet, row.chain)
+    const earlier = first.get(key)
+    if (earlier === undefined) first.set(key, row)
+    else if (row.listedMs < earlier.listedMs) {
+      throw new Error(
+        `AGENTS.md line ${row.line}: listing time ${row.listed} is before ${earlier.listed}, the listing time on line ${earlier.line} for the same wallet and chain`,
+      )
+    }
+    rows.push(row)
+  }
   for (; i < lines.length; i++) {
     if (lines[i]!.trim() !== '') throw new Error(`AGENTS.md line ${i + 1}: text after the agent table`)
   }
   return rows
 }
-
-const agentKey = (wallet: string, chain: string) => `${wallet.toLowerCase()}|${chain}`
 
 /** One listed agent: a wallet and chain, with every row that lists it. */
 export type Agent = {
