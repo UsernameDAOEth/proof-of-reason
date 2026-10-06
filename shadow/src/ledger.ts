@@ -48,52 +48,92 @@ function cells(line: string): string[] {
   return inner.split(/(?<!\\)\|/).map((c) => c.trim())
 }
 
+const isDelimiter = (c: string[]) => c.length === HEADER.length && c.every((x) => /^:?-{3,}:?$/.test(x))
+
+function parseRow(text: string, line: number): AgentRow {
+  const fail = (why: string): never => {
+    throw new Error(`AGENTS.md line ${line}: ${why}`)
+  }
+  if (!text.startsWith('|')) fail('a line inside the agent table must start with "|"')
+  const c = cells(text)
+  if (c.length !== HEADER.length) fail(`expected ${HEADER.length} columns, found ${c.length}`)
+  const [listed, agent, type, wallet, chain, source] = c as [string, string, string, string, string, string]
+  if (!LISTED.test(listed)) fail(`listing time "${listed}" is not YYYY-MM-DDTHH:MMZ`)
+  const listedMs = Date.parse(listed)
+  if (!Number.isFinite(listedMs) || new Date(listedMs).toISOString().slice(0, 16) !== listed.slice(0, 16)) {
+    fail(`listing time "${listed}" is not a real UTC time`)
+  }
+  if (agent === '') fail('agent is empty')
+  if (!(AGENT_TYPES as readonly string[]).includes(type)) fail(`type "${type}" is not one of ${AGENT_TYPES.join(', ')}`)
+  if (!WALLET.test(wallet)) fail(`wallet "${wallet}" is not an address`)
+  if (!(CHAINS as readonly string[]).includes(chain)) fail(`chain "${chain}" is not one of ${CHAINS.join(', ')}`)
+  if (source === '') fail('source is empty')
+  return { line, listed, listedMs, agent, type: type as AgentType, wallet, chain, source }
+}
+
 /**
- * Parses the agent table in shadow/AGENTS.md. Every table line after the header is a row, and a
- * malformed row throws: no row is ever skipped.
+ * Parses the agent table in shadow/AGENTS.md: the header, its delimiter row, and the lines directly
+ * after them up to the first blank line, as GitHub renders it. Inside the table a line that does
+ * not start with "|", or a malformed row, throws with its line number; after the table any
+ * non-blank line throws. Nothing is skipped.
  */
 export function parseAgents(markdown: string): AgentRow[] {
-  const lines = markdown.split('\n')
-  const header = lines.findIndex((l) => l.trim().startsWith('|') && cells(l).join('|') === HEADER.join('|'))
+  const lines = markdown.split(/\r?\n/)
+  const header = lines.findIndex((l) => l.startsWith('|') && cells(l).join('|') === HEADER.join('|'))
   if (header < 0) throw new Error(`AGENTS.md: no agent table with columns ${HEADER.join(', ')}`)
+  const delimiter = lines[header + 1]
+  if (delimiter === undefined || !delimiter.startsWith('|') || !isDelimiter(cells(delimiter))) {
+    throw new Error(`AGENTS.md line ${header + 2}: expected the table's delimiter row`)
+  }
   const rows: AgentRow[] = []
-  for (let i = header + 1; i < lines.length; i++) {
-    const text = lines[i]!
-    if (!text.trim().startsWith('|')) continue
-    const line = i + 1
-    const c = cells(text)
-    if (i === header + 1 && c.every((x) => /^:?-{3,}:?$/.test(x))) continue
-    const fail = (why: string): never => {
-      throw new Error(`AGENTS.md line ${line}: ${why}`)
-    }
-    if (c.length !== HEADER.length) fail(`expected ${HEADER.length} columns, found ${c.length}`)
-    const [listed, agent, type, wallet, chain, source] = c as [string, string, string, string, string, string]
-    if (!LISTED.test(listed)) fail(`listing time "${listed}" is not YYYY-MM-DDTHH:MMZ`)
-    const listedMs = Date.parse(listed)
-    if (!Number.isFinite(listedMs) || new Date(listedMs).toISOString().slice(0, 16) !== listed.slice(0, 16)) {
-      fail(`listing time "${listed}" is not a real UTC time`)
-    }
-    if (agent === '') fail('agent is empty')
-    if (!(AGENT_TYPES as readonly string[]).includes(type)) fail(`type "${type}" is not one of ${AGENT_TYPES.join(', ')}`)
-    if (!WALLET.test(wallet)) fail(`wallet "${wallet}" is not an address`)
-    if (!(CHAINS as readonly string[]).includes(chain)) fail(`chain "${chain}" is not one of ${CHAINS.join(', ')}`)
-    if (source === '') fail('source is empty')
-    rows.push({ line, listed, listedMs, agent, type: type as AgentType, wallet, chain, source })
+  let i = header + 2
+  for (; i < lines.length && lines[i]!.trim() !== ''; i++) rows.push(parseRow(lines[i]!, i + 1))
+  for (; i < lines.length; i++) {
+    if (lines[i]!.trim() !== '') throw new Error(`AGENTS.md line ${i + 1}: text after the agent table`)
   }
   return rows
 }
 
 const agentKey = (wallet: string, chain: string) => `${wallet.toLowerCase()}|${chain}`
 
-/** The row that applies to each wallet and chain: the latest listing time, then the later row. */
-export function latestRows(rows: readonly AgentRow[]): Map<string, AgentRow> {
-  const byKey = new Map<string, AgentRow>()
+/** One listed agent: a wallet and chain, with every row that lists it. */
+export type Agent = {
+  wallet: string
+  chain: string
+  /** From the earliest row: decides which actions count and whether the agent was audited before its listing. */
+  listed: string
+  listedMs: number
+  /** From the latest row: name, type, and where it explains its actions. */
+  agent: string
+  type: AgentType
+  source: string
+  /** Every row for this wallet and chain, in file order. More than one is a correction. */
+  rows: AgentRow[]
+}
+
+/**
+ * Groups rows by wallet and chain (PREREG Amendment 2). The earliest row, the first added, sets
+ * the listing time; a later row changes only name, type, and source, so it can never drop a
+ * counted record or bar the agent.
+ */
+export function agentsByKey(rows: readonly AgentRow[]): Map<string, Agent> {
+  const byKey = new Map<string, Agent>()
   for (const row of rows) {
     const key = agentKey(row.wallet, row.chain)
     const prev = byKey.get(key)
-    if (prev === undefined || row.listedMs >= prev.listedMs) byKey.set(key, row)
+    if (prev === undefined) {
+      const { wallet, chain, listed, listedMs, agent, type, source } = row
+      byKey.set(key, { wallet, chain, listed, listedMs, agent, type, source, rows: [row] })
+      continue
+    }
+    byKey.set(key, { ...prev, agent: row.agent, type: row.type, source: row.source, rows: [...prev.rows, row] })
   }
   return byKey
+}
+
+/** Wallets and chains listed in more than one row, in file order of their first row. */
+export function corrections(rows: readonly AgentRow[]): Agent[] {
+  return [...agentsByKey(rows).values()].filter((a) => a.rows.length > 1)
 }
 
 /**
@@ -117,7 +157,7 @@ export function summaryLine(c: LedgerCounts): string {
 }
 
 /** Why a record is or is not counted toward A1. null means counted. */
-export function exclusion(record: ShadowRecord, row: AgentRow | undefined, agentBarred: boolean): string | null {
+export function exclusion(record: ShadowRecord, row: Agent | undefined, agentBarred: boolean): string | null {
   if (record.located.status !== 'LOCATED') return 'unlocated'
   if (!record.results.some((r) => r.status === 'TRUE' || r.status === 'FALSE')) return 'no claim decided TRUE or FALSE'
   if (record.record.window !== undefined) return 'custom window'
@@ -151,11 +191,12 @@ function byPosted(a: ShadowRecord, b: ShadowRecord): number {
 }
 
 /**
- * The A1 count under docs/PREREG.md Amendment 1. Pass basis: each agent's earliest 6 counted
- * records by posted_at. Kill basis: each agent's earliest 20. Integer arithmetic only.
+ * The A1 count under docs/PREREG.md Amendments 1 and 2. Listing times come from each agent's
+ * earliest row, types from its latest. Pass basis: each agent's earliest 6 counted records by
+ * posted_at. Kill basis: each agent's earliest 20. Integer arithmetic only.
  */
 export function countA1(records: readonly ShadowRecord[], agents: readonly AgentRow[]): A1Count {
-  const rows = latestRows(agents)
+  const rows = agentsByKey(agents)
   // An agent with any record audited before its listing time never counts. A record without
   // auditedAt cannot show it was audited after the listing, so it bars the agent too.
   const barred = new Set<string>()
@@ -233,6 +274,21 @@ export function buildLedger(records: readonly ShadowRecord[], agents: readonly A
     const c = a1.byType[t]
     return `| ${[t, c.counted, c.falsePremise, c.passBasis, c.passFalse, c.killBasis, c.killFalse].join(' | ')} |`
   })
+  const fixes = corrections(agents)
+  const fixRows = fixes.map((a) => {
+    const listings = a.rows.map((r) => `line ${r.line} ${r.listed}`).join('; ')
+    return `| ${[a.wallet, a.chain, listings, `line ${a.rows[0]!.line} ${a.listed}`, `line ${a.rows.at(-1)!.line}`].join(' | ')} |`
+  })
+  const correctionLines =
+    fixes.length === 0
+      ? ['Corrections (PREREG Amendment 2): none.']
+      : [
+          'Corrections (PREREG Amendment 2): each wallet and chain below is listed in more than one row of shadow/AGENTS.md. The earliest row decides which actions count; the latest row gives only name, type, and source.',
+          '',
+          '| Wallet | Chain | Rows (line, listing time) | Counts from | Name, type, source from |',
+          '| --- | --- | --- | --- | --- |',
+          ...fixRows,
+        ]
   return [
     '# Proof of Reason shadow-audit ledger',
     '',
@@ -245,6 +301,8 @@ export function buildLedger(records: readonly ShadowRecord[], agents: readonly A
     '| Type | Counted | False premise | Pass basis | False in pass basis | Kill basis | False in kill basis |',
     '| --- | --- | --- | --- | --- | --- | --- |',
     ...types,
+    '',
+    ...correctionLines,
     '',
     `All records, not the A1 count: ${summaryLine(countRecords(records))}.`,
     '',

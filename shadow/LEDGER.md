@@ -13,6 +13,8 @@ Counted: 0, 0 with a false premise, before the per-agent caps.
 | trader | 0 | 0 | 0 | 0 | 0 | 0 |
 | other | 0 | 0 | 0 | 0 | 0 | 0 |
 
+Corrections (PREREG Amendment 2): none.
+
 All records, not the A1 count: 0 audited, 0 with at least one FALSE premise, 0 unverifiable, 0 unlocated.
 
 | Date | Agent | Chain | Claim kind | Claimed | Observed | Status | Counted | Record sha256 |

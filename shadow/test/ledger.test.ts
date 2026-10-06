@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { buildLedger, countA1, countRecords, loadRecords, parseAgents, summaryLine } from '../src/ledger.ts'
+import { buildLedger, corrections, countA1, countRecords, loadRecords, parseAgents, summaryLine } from '../src/ledger.ts'
 import type { AgentType } from '../src/ledger.ts'
 import { SHADOW_SCHEMA, recordJson, seal } from '../src/run.ts'
 import type { ShadowRecord, ShadowStatus } from '../src/run.ts'
@@ -49,13 +49,14 @@ function make(id: string, status: ShadowStatus, results: ClaimResult[], opts: Ma
   })
   return seal({
     schema: SHADOW_SCHEMA,
-    shadowVersion: '0.2.0',
+    shadowVersion: '0.3.0',
     engineVersion: '0.2.0',
     ruleset: 'REASON-R0',
     chainId: 8453,
     auditedAt: opts.auditedAt ?? AUDITED,
     record: record as unknown as ShadowRecord['record'],
     located,
+    completeness: null,
     pinnedBlock: status === 'UNLOCATED' ? null : 99n,
     observations: [],
     results,
@@ -191,17 +192,79 @@ describe('ledger: shadow/AGENTS.md rows', () => {
     expect(() => parseAgents('# agents\n\nno table here\n')).toThrow('no agent table')
   })
 
-  it('a wallet and chain listed twice take the latest row: its listing time and type', () => {
-    const agents = parseAgents(
-      agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'vault allocator', '2026-10-03T00:00Z')]),
+  it('a line inside the table without its leading pipe throws with its line number', () => {
+    const md = agentsMd([row(walletN(1)), row(walletN(2)).slice(1)])
+    expect(() => parseAgents(md)).toThrow('AGENTS.md line 8: a line inside the agent table must start with "|"')
+    expect(() => parseAgents(agentsMd([` ${row(walletN(1))}`]))).toThrow('AGENTS.md line 7: a line inside the agent table must start with "|"')
+  })
+
+  it('a non-blank line after the table throws; blank lines after it do not', () => {
+    const after = ['# agents', '', ...HEADER, row(walletN(1)), '', '', row(walletN(2)), ''].join('\n')
+    expect(() => parseAgents(after)).toThrow('AGENTS.md line 8: text after the agent table')
+    const prose = ['# agents', '', ...HEADER, row(walletN(1)), '', 'A note under the table.'].join('\n')
+    expect(() => parseAgents(prose)).toThrow('AGENTS.md line 7: text after the agent table')
+    const trailing = ['# agents', '', ...HEADER, row(walletN(1)), '', '   ', ''].join('\n')
+    expect(parseAgents(trailing)).toHaveLength(1)
+  })
+
+  it('a header without its delimiter row throws', () => {
+    expect(() => parseAgents(['# agents', HEADER[0], row(WALLET)].join('\n'))).toThrow("AGENTS.md line 3: expected the table's delimiter row")
+  })
+})
+
+describe('ledger: one wallet listed twice (PREREG Amendment 2)', () => {
+  const twice = (later = '2026-10-03T00:00Z') =>
+    parseAgents(
+      agentsMd([
+        row(WALLET, 'trader', '2026-10-01T00:00Z', 'base', 'First Name'),
+        row(walletN(5), 'other'),
+        row(WALLET, 'vault allocator', later, 'base', 'Corrected Name'),
+      ]),
     )
-    const early = make('early', 'TRUE', [t('r1', 'TRUE')], { postedAt: '2026-10-02T00:00:00Z' })
+
+  it('counts from the earliest row and takes the type from the latest', () => {
+    const agents = twice()
+    const between = make('between', 'TRUE', [t('r1', 'TRUE')], { postedAt: '2026-10-02T00:00:00Z' })
     const late = make('late', 'FALSE', [t('r1', 'FALSE', 5)], { postedAt: '2026-10-04T00:00:00Z' })
-    const a1 = countA1([early, late], agents)
-    expect(a1.reasons.get('early')).toBe('transaction not after listing')
+    const a1 = countA1([between, late], agents)
+    expect(a1.reasons.get('between')).toBeNull()
     expect(a1.reasons.get('late')).toBeNull()
-    expect(a1.byType['vault allocator']).toMatchObject({ counted: 1, falsePremise: 1 })
+    expect(a1.byType['vault allocator']).toMatchObject({ counted: 2, falsePremise: 1 })
     expect(a1.byType.trader.counted).toBe(0)
+  })
+
+  it('a later row neither drops a counted record nor bars the agent', () => {
+    const records = [
+      make('counted-early', 'FALSE', [t('r1', 'FALSE', 5)], { postedAt: '2026-10-02T00:00:00Z', auditedAt: '2026-10-02T06:00:00.000Z' }),
+      make('counted-late', 'TRUE', [t('r1', 'TRUE')], { postedAt: '2026-10-08T00:00:00Z', auditedAt: '2026-10-08T06:00:00.000Z' }),
+    ]
+    const once = parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z')]))
+    const before = countA1(records, once)
+    expect(before).toMatchObject({ counted: 2, falsePremise: 1 })
+    // A row added after both audits, listed later than both: the first one was audited before it.
+    const after = countA1(records, twice('2026-10-09T00:00Z'))
+    expect(after).toMatchObject({ counted: 2, falsePremise: 1, passBasis: 2, passFalse: 1 })
+    expect([...after.reasons.values()]).toEqual([null, null])
+    // A later row with an earlier listing time does not move the listing time either.
+    const earlier = parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'trader', '2026-09-01T00:00Z')]))
+    const old = make('before-first-row', 'TRUE', [t('r1', 'TRUE')], { postedAt: '2026-09-20T00:00:00Z' })
+    expect(countA1([...records, old], earlier).reasons.get('before-first-row')).toBe('transaction not after listing')
+  })
+
+  it('lists every correction in LEDGER.md: wallet, chain, and each row with its line and listing time', () => {
+    const agents = twice()
+    expect(corrections(agents).map((a) => [a.wallet, a.chain, a.rows.map((r) => r.line)])).toEqual([[WALLET, 'base', [7, 9]]])
+    const ledger = buildLedger([], agents)
+    expect(ledger).toContain('| Wallet | Chain | Rows (line, listing time) | Counts from | Name, type, source from |')
+    expect(ledger).toContain(`| ${WALLET} | base | line 7 2026-10-01T00:00Z; line 9 2026-10-03T00:00Z | line 7 2026-10-01T00:00Z | line 9 |`)
+    expect(buildLedger([], parseAgents(agentsMd([row(WALLET)])))).toContain('Corrections (PREREG Amendment 2): none.')
+  })
+
+  it('the same wallet on another chain is a new agent with its own listing time', () => {
+    const agents = parseAgents(agentsMd([row(WALLET, 'trader', '2026-10-01T00:00Z'), row(WALLET, 'other', '2026-10-03T00:00Z', 'monad')]))
+    expect(corrections(agents)).toEqual([])
+    const monad = make('monad', 'TRUE', [t('r1', 'TRUE')], { chain: 'monad', postedAt: '2026-10-02T00:00:00Z' })
+    expect(countA1([monad], agents).reasons.get('monad')).toBe('transaction not after listing')
   })
 })
 

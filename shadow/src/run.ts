@@ -12,14 +12,14 @@ import { decide } from 'proof-of-reason-engine/verdict'
 import type { Verdict } from 'proof-of-reason-engine/verdict'
 import { MissingRpcUrl, viemReaders } from './chain.ts'
 import type { ShadowReaders } from './chain.ts'
-import { locate } from './locate.ts'
-import type { LocateResult, LocatedTx, Unlocated } from './locate.ts'
+import { WindowNotClosed, locate } from './locate.ts'
+import type { Completeness, LocateResult, LocatedTx, Unlocated } from './locate.ts'
 import { parseClaimRecord } from './record.ts'
 import type { ClaimRecordV0 } from './record.ts'
 import { ZerionError, createZerionClient } from './zerion.ts'
 
 export const SHADOW_SCHEMA = 'proof-of-reason/shadow-record/v0'
-export const SHADOW_VERSION = '0.2.0'
+export const SHADOW_VERSION = '0.3.0'
 export const NO_TYPED_CLAIMS = 'no typed claims: prose extraction is not configured'
 
 export type ShadowStatus = 'TRUE' | 'FALSE' | 'UNVERIFIABLE' | 'UNLOCATED'
@@ -34,6 +34,8 @@ export type ShadowRecordBody = {
   auditedAt: string
   record: ClaimRecordV0
   located: LocatedTx | Unlocated
+  /** Without tx_hash: the window's boundary blocks and the wallet's nonces there. null with tx_hash. */
+  completeness: Completeness | null
   /** The block every premise is read at: the action's block minus 1 (PREREG Amendment 1). */
   pinnedBlock: bigint | null
   observations: AnyObservation[]
@@ -100,6 +102,7 @@ export async function auditRecord(
     auditedAt: (deps.now ?? (() => new Date()))().toISOString(),
     record,
     located: found.located,
+    completeness: found.completeness,
     context: { zerion: found.context.transaction === null && found.context.listing.pages === 0 ? null : found.context },
   } as const
 
@@ -128,7 +131,7 @@ export async function auditRecord(
 
 /** Error text safe to print: our own messages only. Library errors can carry RPC URLs. */
 export function safeError(error: unknown): string {
-  if (error instanceof ZerionError || error instanceof SchemaError || error instanceof MissingRpcUrl) {
+  if (error instanceof ZerionError || error instanceof SchemaError || error instanceof MissingRpcUrl || error instanceof WindowNotClosed) {
     return `${error.name}: ${error.message}`
   }
   return error instanceof Error ? error.name : 'Error'

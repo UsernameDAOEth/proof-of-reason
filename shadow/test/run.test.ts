@@ -3,9 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { canonicalJson } from 'proof-of-reason-engine/receipt'
-import { locate } from '../src/locate.ts'
+import { WindowNotClosed, locate } from '../src/locate.ts'
 import { RERUN_FIELDS, rerunRecord } from '../src/rerun.ts'
-import { NO_TYPED_CLAIMS, SHADOW_VERSION, auditRecord, recordJson, sha256Canonical, verifySeal } from '../src/run.ts'
+import { NO_TYPED_CLAIMS, SHADOW_VERSION, auditRecord, recordJson, safeError, seal, sha256Canonical, verifySeal } from '../src/run.ts'
 import type { ShadowRecord } from '../src/run.ts'
 import { createZerionClient } from '../src/zerion.ts'
 import type { ZerionTransaction } from '../src/zerion.ts'
@@ -154,9 +154,51 @@ describe('run: one fixture record end to end', () => {
     expect(report).toEqual({
       sealValid: true,
       fields: Object.fromEntries(RERUN_FIELDS.map((f) => [f, true])),
+      window: { boundaries: true, locatedInside: true },
       match: true,
     })
-    expect(tx.calls).toEqual([`tx:${hash(2)}`, `ts:${ACTION}`])
+    // The recorded transaction, then the nonces at the sealed boundaries, then four boundary timestamps.
+    const { firstBlock, lastBlock } = record.completeness!
+    expect(tx.calls.slice(0, 4)).toEqual([`tx:${hash(2)}`, `ts:${ACTION}`, `nonce:${firstBlock - 1n}`, `nonce:${lastBlock}`])
+    expect(tx.calls.slice(-4)).toEqual([`ts:${firstBlock - 1n}`, `ts:${firstBlock}`, `ts:${lastBlock}`, `ts:${lastBlock + 1n}`])
+    expect(tx.calls).not.toContain('head')
+  })
+
+  it('a re-run repeats the nonce check: another transaction from the wallet in the window is a mismatch', async () => {
+    const stored = JSON.parse(recordJson(await audit(claimRecord()))) as ShadowRecord
+    const tx = new FakeTxReader([...CHAIN, { n: 4, offsetSeconds: 1200, success: false }])
+    const report = await rerunRecord(stored, readers(tx, ACTION))
+    expect(report.fields).toMatchObject({ completeness: false, located: true, results: true })
+    expect(report.window).toEqual({ boundaries: true, locatedInside: true })
+    expect(report.match).toBe(false)
+  })
+
+  it('a re-run checks the boundaries and that the located block lies between them', async () => {
+    const record = await audit(claimRecord())
+    const { sha256: _, ...body } = record
+    const moved = seal({ ...body, completeness: { ...record.completeness!, lastBlock: ACTION - 1n } })
+    const report = await rerunRecord(JSON.parse(recordJson(moved)) as ShadowRecord, readers(new FakeTxReader(CHAIN), ACTION))
+    expect(report.sealValid).toBe(true)
+    expect(report.window).toEqual({ boundaries: false, locatedInside: false })
+    expect(report.match).toBe(false)
+  })
+
+  it('a record located without tx_hash seals its boundary blocks and nonces; one with tx_hash seals null', async () => {
+    const record = await audit(claimRecord())
+    expect(record.completeness).toEqual({
+      firstBlock: blockAt(-3600),
+      lastBlock: blockAt(3600),
+      nonceBeforeFirst: 7n,
+      nonceAtLast: 10n,
+    })
+    const byHash = await audit(claimRecord({ tx_hash: hash(2), source_text: `in ${hash(2)}` }))
+    expect(byHash.completeness).toBeNull()
+  })
+
+  it('a window that has not closed throws, so nothing is sealed', async () => {
+    const shadow = readers(new FakeTxReader(CHAIN, blockAt(1800)), ACTION)
+    await expect(audit(claimRecord(), LISTED, shadow)).rejects.toBeInstanceOf(WindowNotClosed)
+    expect(safeError(await audit(claimRecord(), LISTED, shadow).catch((e: unknown) => e))).toMatch(/^WindowNotClosed: the window ends at /)
   })
 
   it('a re-run compares every field except auditedAt, context, and the seal', async () => {

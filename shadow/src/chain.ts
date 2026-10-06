@@ -21,6 +21,10 @@ export interface TxReader {
   /** null when the chain has no such transaction. Any other read failure throws. */
   getTransaction(hash: Hex): Promise<TxInfo | null>
   getBlockTimestamp(block: bigint): Promise<bigint>
+  /** The latest block's number and timestamp. */
+  getHead(): Promise<{ number: bigint; timestamp: bigint }>
+  /** eth_getTransactionCount of the address at the block: every transaction it sent, failed ones included. */
+  getNonce(address: Address, block: bigint): Promise<bigint>
 }
 
 export type ShadowReaders = AuditReaders & { tx: TxReader }
@@ -72,6 +76,14 @@ export function viemReaders(chain: ChainConfig, env: NodeJS.ProcessEnv = process
       },
       async getBlockTimestamp(block) {
         return (await client.getBlock({ blockNumber: block })).timestamp
+      },
+      async getHead() {
+        const head = await client.getBlock()
+        if (head.number === null) throw new Error('head block is pending')
+        return { number: head.number, timestamp: head.timestamp }
+      },
+      async getNonce(address, block) {
+        return BigInt(await client.getTransactionCount({ address, blockNumber: block }))
       },
     },
   }

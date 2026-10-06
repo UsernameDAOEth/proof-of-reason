@@ -2,7 +2,7 @@
 
 The shadow runner audits public agents without any integration. It takes an agent's stated reason and finds the on-chain action the reason refers to. It then reads the chain state the reason cites at the block before the action's block, and decides whether each premise was TRUE, FALSE, or UNVERIFIABLE. The records feed pre-registered assumption A1 in docs/PREREG.md, counted as Amendment 1 (2026-10-01) sets out.
 
-**Zerion output never sets a status.** Zerion lists a wallet's transactions so the runner can find the action; that is all. The runner re-reads everything that matters from the chain: sender, success, target contract, method selector, block, and block timestamp. Every observation is a pinned-block read against an RPC endpoint. Zerion data appears in a record only under the `context` key, and nothing under `context` is read when a status is decided. A test (shadow/test/run.test.ts) runs the same record against two different Zerion payloads and gets identical located transactions, observations, results, verdicts, and statuses.
+**Zerion proposes; the chain decides.** Zerion only proposes which transactions to check. For a record without `tx_hash`, the wallet's nonce at the window's boundary blocks proves that Zerion proposed all of them, and the chain then re-reads everything that matters: sender, success, target contract, method selector, block, and block timestamp. So Zerion can make a record UNLOCATED (a listing that is truncated, too long, or short of or over the nonce count), but never LOCATED, TRUE, or FALSE. Every observation is a pinned-block read against an RPC endpoint. Zerion data appears in a record only under the `context` key, and nothing under `context` is read when a status is decided. A test (shadow/test/run.test.ts) runs the same record against two different Zerion payloads and gets identical located transactions, observations, results, verdicts, and statuses.
 
 ## Counting rules (PREREG A1 as amended)
 
@@ -17,7 +17,9 @@ At a read, a threshold whose minimum is not met is reported with the counts and 
 
 Amendment 1 is the authority; this section says how shadow/src/ledger.ts applies it.
 
-**Who is listed.** shadow/AGENTS.md is the sampling frame. Each table row gives Listed (UTC) as `YYYY-MM-DDTHH:MMZ`, Agent, Type (`vault allocator`, `trader`, or `other`), Wallet, Chain, and where the agent explains its actions. The ledger parses every row, and a malformed row stops it with the line number: no row is skipped. If a wallet and chain appear in more than one row, the row with the latest listing time sets the listing time and type.
+**Who is listed.** shadow/AGENTS.md is the sampling frame. Each table row gives Listed (UTC) as `YYYY-MM-DDTHH:MMZ`, Agent, Type (`vault allocator`, `trader`, or `other`), Wallet, Chain, and where the agent explains its actions. The ledger reads exactly the table GitHub shows: the header, its delimiter row, and the lines directly after them up to the first blank line. Inside the table, a line that does not start with "|", or a malformed row, stops the ledger with its line number; after the table, any non-blank line does too. No line is skipped.
+
+If a wallet and chain appear in more than one row, docs/PREREG.md Amendment 2 applies. The earliest row, the first one added, sets the listing time: it decides which of the agent's actions count and whether the agent was audited before its listing. A later row changes only the agent's name, type, and source, so it can never drop a counted record or bar the agent. shadow/LEDGER.md lists every such correction: the wallet, the chain, and each row's line and listing time. The same wallet on a different chain is a new agent, with its own listing time.
 
 **What counts.** A record is counted only when all of these hold:
 
@@ -55,16 +57,22 @@ shadow/LEDGER.md prints both threshold lines, the counted total before the caps,
    Typed claims use every ClaimV0 kind plus the audit-only kinds `vault_rate` and `balance` (docs/CLAIMS.md). Prose alone cannot be checked, because no extractor is configured: such a record is located but UNVERIFIABLE, with a note saying why.
 2. **Locate** (shadow/src/locate.ts). The runner finds the action as Amendment 1, "Which transaction", sets out: a hash the statement gives, or the only match in the window. It never picks the nearest of several.
    - **With `tx_hash`:** the action is that transaction. The chain must confirm that the sender is the agent wallet, that it succeeded, and that it matches the target contract and method when the record names them. No window applies, and Zerion is not asked. If any check fails, or the chain has no such transaction, the record is UNLOCATED with the reason.
-   - **Without `tx_hash`:** the window runs from posted_at minus beforeSeconds to posted_at plus afterSeconds. The default is 3,600 seconds each way; a record's own window overrides it. Zerion lists the wallet's transactions on that chain. Candidates are confirmed transactions in the window (and sent from the wallet, when Zerion reports a sender).
-     - If the Zerion listing was truncated, or there are more candidates than maxCandidates (25), the record is UNLOCATED: uniqueness could not be checked.
-     - Otherwise every candidate is checked on chain: the sender is the wallet, it succeeded, it matches the target contract and method when the record names them, and its block timestamp falls in the window.
-     - Exactly one passing candidate is the action. None is UNLOCATED, "no matching transaction in the window". Two or more is UNLOCATED, "ambiguous: N transactions match".
+   - **Without `tx_hash`:** the window runs from posted_at minus beforeSeconds to posted_at plus afterSeconds. The default is 3,600 seconds each way; a record's own window overrides it.
+     - **The window must have closed.** Its end must be before the chain head's timestamp. Until then the runner refuses the record (WindowNotClosed): it throws and nothing is sealed.
+     - **Boundary blocks.** A binary search on block timestamps finds the first block with a timestamp at or after the window start and the last block with a timestamp at or before the window end. Several blocks may share a timestamp; all of them are inside. Reads are sequential, one request each, never batched.
+     - **M from the chain.** The wallet's nonce (eth_getTransactionCount) is read at the block before the first boundary block and at the last. The difference, M, is how many transactions the wallet sent in the window, failed ones included.
+     - **N from Zerion.** Zerion lists the wallet's transactions on that chain. N is the number of distinct listed transactions in the window sent from the wallet, of any mined status (confirmed or failed).
+     - If the listing was truncated, the record is UNLOCATED. If N is not equal to M, it is UNLOCATED: "Zerion listed N of M transactions the wallet sent in the window". If N is more than maxCandidates (25), it is UNLOCATED: uniqueness could not be checked.
+     - Only when N equals M is every listed transaction checked on chain. Each must be sent by the wallet in a block between the boundaries, or the record is UNLOCATED; with that, the N listed are all M the wallet sent. Each is then a match if it succeeded, matches the target contract and method when the record names them, and its block timestamp falls in the window.
+     - Exactly one match is the action. None is UNLOCATED, "no matching transaction in the window". Two or more is UNLOCATED, "ambiguous: N transactions match".
+     - The boundary blocks and both nonces are sealed in the record as `completeness`. A record with `tx_hash` skips all of this and seals `completeness: null`.
+     - Both paths locate only a transaction whose sender (`from`) is the agent wallet, and the nonce counts exactly those. A contract wallet such as a Safe never sends a transaction itself, so its actions are not located under these rules.
    - The action's block is kept as `located.blockNumber`. The **pinned block** for every read is the block before it: `pinnedBlock = located.blockNumber - 1`.
 3. **Observe** (engine/src/audit.ts, morpho.ts, erc4626.ts, erc20.ts). Each typed claim is read at the pinned block, the block before the action, with the windows and formulas in docs/CLAIMS.md. A window that spans several blocks ends at the pinned block. Reads are one request each, sequential, and never batched.
 4. **Compare and decide** (engine/src/compare.ts, engine/src/verdict.ts). Each claim gets TRUE, FALSE, or UNVERIFIABLE. The verdict uses no mandate, so there are no required kinds and no action check.
 5. **Seal.** shadow/records/<id>.json holds:
-   - `auditedAt`, the UTC time of the run, and `shadowVersion` (0.2.0 for these rules)
-   - the record, the located transaction (with the action's block), and the pinned block
+   - `auditedAt`, the UTC time of the run, and `shadowVersion` (0.3.0 for these rules)
+   - the record, the located transaction (with the action's block), `completeness` (the boundary blocks and nonces, or null), and the pinned block
    - every observation with its block, each claim's result, the verdict, and the status
    - any notes, and the Zerion `context`
    - `sha256`: the SHA-256 of the canonical JSON of everything else
@@ -75,22 +83,23 @@ Pinned-block semantics: a read pinned to block N returns the state after every t
 
 ## Re-running any record without Zerion
 
-Zerion only found the transaction, if it was needed at all. Its hash is in the record, so anyone with an RPC that still holds state at the pinned block and the blocks before it can re-run the audit:
+Zerion only proposed transactions, if it was needed at all. The located hash, the boundary blocks, and the nonces are in the record, so anyone with an RPC that still holds state at the pinned block and the blocks before it, and at the boundary blocks, can re-run the audit:
 
 1. **Check the seal.** Parse the record JSON, remove the `sha256` field, canonicalize the rest with the rules above, and hash it with SHA-256. It must equal `sha256`.
-2. **Check the transaction.** Fetch `located.txHash` from the chain. If the record has `tx_hash`, it must be the same hash. Its sender must be `record.agent.wallet`, its receipt status must be success, and its block must equal `located.blockNumber`. `pinnedBlock` must equal `located.blockNumber - 1`. If the record names a target, its `to` and the first four bytes of its input must match. A re-run checks the recorded transaction; it does not repeat the Zerion search, so it does not re-check that the match in the window was unique.
-3. **Repeat the reads.** For each entry in `record.claims`, make the reads docs/CLAIMS.md specifies at `pinnedBlock` (for example: Morpho `market(id)` and the IRM's `borrowRateView` at each of the five blocks ending at the pinned block; ERC-4626 `convertToAssets(10^36)` at the start and pinned blocks). Compute the values and compare them with `observations`.
-4. **Re-decide.** Apply the TRUE, FALSE, and UNVERIFIABLE rules in docs/CLAIMS.md and compare with `results` and `status`.
+2. **Check the transaction.** Fetch `located.txHash` from the chain. If the record has `tx_hash`, it must be the same hash. Its sender must be `record.agent.wallet`, its receipt status must be success, and its block must equal `located.blockNumber`. `pinnedBlock` must equal `located.blockNumber - 1`. If the record names a target, its `to` and the first four bytes of its input must match. A re-run checks the recorded transaction; it does not repeat the Zerion search.
+3. **Check the window proof** (records with `completeness`). Read the block timestamps around `completeness.firstBlock` and `completeness.lastBlock`: the first must be the first block at or after the window start, and the last the last block at or before the window end. Read the wallet's nonce at `firstBlock - 1` and at `lastBlock`; they must equal `nonceBeforeFirst` and `nonceAtLast`. A located block must lie between the two boundary blocks. To re-check uniqueness without Zerion, scan blocks `firstBlock` to `lastBlock` for the wallet's transactions: there are exactly `nonceAtLast - nonceBeforeFirst` of them.
+4. **Repeat the reads.** For each entry in `record.claims`, make the reads docs/CLAIMS.md specifies at `pinnedBlock` (for example: Morpho `market(id)` and the IRM's `borrowRateView` at each of the five blocks ending at the pinned block; ERC-4626 `convertToAssets(10^36)` at the start and pinned blocks). Compute the values and compare them with `observations`.
+5. **Re-decide.** Apply the TRUE, FALSE, and UNVERIFIABLE rules in docs/CLAIMS.md and compare with `results` and `status`.
 
-The runner automates steps 1 to 4 with no Zerion key:
+The runner automates steps 1 to 5, except the block scan, with no Zerion key:
 
 ```sh
 cd shadow
-export BASE_RPC_URL=...   # or MONAD_RPC_URL / ETHEREUM_RPC_URL for the record's chain; it must hold state at the pinned block
+export BASE_RPC_URL=...   # or MONAD_RPC_URL / ETHEREUM_RPC_URL for the record's chain; it must hold state at the pinned and boundary blocks
 pnpm rerun records/<id>.json
 ```
 
-It prints `seal valid`, then MATCH or MISMATCH for every field except `auditedAt` and `context` (`schema`, `shadowVersion`, `engineVersion`, `ruleset`, `chainId`, `record`, `located`, `pinnedBlock`, `observations`, `results`, `verdict`, `status`, `notes`), and finally MATCH overall. `auditedAt` is the time of the original run, and the Zerion `context` is not re-derived, because it is not evidence.
+It prints `seal valid`, then MATCH or MISMATCH for every field except `auditedAt` and `context` (`schema`, `shadowVersion`, `engineVersion`, `ruleset`, `chainId`, `record`, `located`, `completeness`, `pinnedBlock`, `observations`, `results`, `verdict`, `status`, `notes`). For a record with `completeness`, it then prints whether the window boundaries still hold and whether the located block lies inside them, and finally MATCH overall. `auditedAt` is the time of the original run, and the Zerion `context` is not re-derived, because it is not evidence.
 
 ## Commands
 
@@ -98,7 +107,7 @@ Run from shadow/. Keys and RPC URLs come from the environment only and are never
 
 | Command | Needs | Does |
 | --- | --- | --- |
-| `pnpm run run` (`--in inputs --out records --only <id>`) | ZERION_API_KEY, the chain's RPC variable | audits every input record and writes records/<id>.json; a record that hits a read error is not written and is reported by error name |
+| `pnpm run run` (`--in inputs --out records --only <id>`) | ZERION_API_KEY, the chain's RPC variable | audits every input record and writes records/<id>.json; a record that hits a read error, or whose window has not closed, is not written and is reported by error name |
 | `pnpm rerun records/<id>.json` | the chain's RPC variable | re-runs one record from its JSON without Zerion |
 | `pnpm ledger` (`--records records --agents AGENTS.md --out LEDGER.md`) | nothing | rebuilds LEDGER.md from records/ and AGENTS.md and prints the A1 pass and kill lines |
 | `pnpm prospect -- --chain base 0x...` | ZERION_API_KEY, the chain's RPC variable | context only: counts and sizes each address's reallocate and allocate calls over the last 30 days |

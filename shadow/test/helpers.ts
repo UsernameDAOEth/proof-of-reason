@@ -78,12 +78,22 @@ export const REALLOCATE_DATA: Hex = encodeFunctionData({
 
 export type ChainTx = Partial<TxInfo> & { n: number; offsetSeconds: number; timestamp?: bigint }
 
+/** Far enough after posted_at that every test window has closed. */
+export const HEAD_BLOCK = blockAt(8 * 86_400)
+
+/**
+ * A chain with the given transactions. Nonces are derived from them: an address's nonce at block b
+ * is the number of its transactions in blocks <= b, failed ones included, plus `nonceBase`.
+ */
 export class FakeTxReader implements TxReader {
   calls: string[] = []
   txs = new Map<string, TxInfo>()
   times = new Map<bigint, bigint>()
+  head: bigint
+  nonceBase = 7n
 
-  constructor(txs: ChainTx[]) {
+  constructor(txs: ChainTx[], head: bigint = HEAD_BLOCK) {
+    this.head = head
     for (const t of txs) {
       const blockNumber = t.blockNumber ?? blockAt(t.offsetSeconds)
       this.txs.set(hash(t.n), {
@@ -106,6 +116,20 @@ export class FakeTxReader implements TxReader {
   async getBlockTimestamp(block: bigint): Promise<bigint> {
     this.calls.push(`ts:${block}`)
     return this.times.get(block) ?? tsOf(block)
+  }
+
+  async getHead() {
+    this.calls.push('head')
+    return { number: this.head, timestamp: this.times.get(this.head) ?? tsOf(this.head) }
+  }
+
+  async getNonce(address: Address, block: bigint): Promise<bigint> {
+    this.calls.push(`nonce:${block}`)
+    let n = this.nonceBase
+    for (const tx of this.txs.values()) {
+      if (tx.from.toLowerCase() === address.toLowerCase() && tx.blockNumber <= block) n++
+    }
+    return n
   }
 }
 
