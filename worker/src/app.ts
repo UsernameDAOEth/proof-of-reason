@@ -4,6 +4,7 @@ import type { Context } from 'hono'
 import { paymentMiddleware, x402ResourceServer } from '@x402/hono'
 import type { FacilitatorClient, RoutesConfig } from '@x402/core/server'
 import { ExactEvmScheme } from '@x402/evm/exact/server'
+import { isAddress } from 'viem'
 import type { Address } from 'viem'
 import type { Mandate } from 'proof-of-reason-engine/claims'
 import { SchemaError, TYPED_DECISION_KINDS, isTypedDecisionMandate } from 'proof-of-reason-engine/claims'
@@ -12,6 +13,8 @@ import { CheckRequestV0 } from './body.ts'
 import { HttpError, runCheck } from './check.ts'
 import type { CheckDeps } from './check.ts'
 import { NETWORK, PRICE_ATOMIC, USDC, USDC_EIP712 } from './config.ts'
+import { leashRefuses } from './leash.ts'
+import type { LeashReader, LeashVerdict } from './leash.ts'
 
 /** The subset of a Workers KV namespace the app uses. */
 export interface ReceiptStore {
@@ -26,13 +29,15 @@ export type AppDeps = {
   mandates: Readonly<Record<string, Mandate>>
   /** Built per request so the VALIDATOR_KEY secret is read at runtime, never at import time. */
   checkDeps: () => CheckDeps
+  /** Optional. Read only when a request names its agent in `x-leash-agent` (see leash.ts). */
+  leash?: LeashReader
 }
 
-type Vars = { Variables: { checkRequest: CheckRequestV0; mandate: Mandate } }
+type Vars = { Variables: { checkRequest: CheckRequestV0; mandate: Mandate; leash?: LeashVerdict } }
 
 const INTENT_HASH = /^0x[0-9a-f]{64}$/
 
-function json(c: Context, value: unknown, status: 200 | 400 | 404 | 422 | 500 | 503 = 200) {
+function json(c: Context, value: unknown, status: 200 | 400 | 403 | 404 | 422 | 500 | 503 = 200) {
   return c.body(canonicalJson(value), status, { 'content-type': 'application/json; charset=utf-8' })
 }
 
@@ -100,6 +105,19 @@ export function createApp(deps: AppDeps) {
       const expected = wanted ? 'typed-decision' : 'ClaimV0'
       return json(c, { error: `mandate ${parsed.data.mandateId} takes ${expected} claim kinds` }, 400)
     }
+    // An agent that names itself in x-leash-agent is held to its owner's leash, before it is charged.
+    const agent = c.req.header('x-leash-agent')
+    if (agent !== undefined && deps.leash !== undefined) {
+      if (!isAddress(agent, { strict: false })) return json(c, { error: 'x-leash-agent must be an address' }, 400)
+      let leash: LeashVerdict
+      try {
+        leash = await deps.leash(agent)
+      } catch {
+        return json(c, { error: "could not read the agent's leash; nothing was charged, retry" }, 503)
+      }
+      if (leashRefuses(leash)) return json(c, { error: `the agent's leash refuses this payment: ${leash.status}`, leash }, 403)
+      c.set('leash', leash)
+    }
     c.set('checkRequest', parsed.data)
     c.set('mandate', mandate)
     await next()
@@ -113,6 +131,7 @@ export function createApp(deps: AppDeps) {
       verdict: result.verdict,
       signed: result.signed,
       receipt: result.receipt,
+      ...(c.get('leash') === undefined ? {} : { leash: c.get('leash') }),
     })
   })
 

@@ -6,12 +6,13 @@ import { registerExactEvmScheme } from '@x402/evm/exact/client'
 import { createApp } from '../src/app.ts'
 import { NETWORK, PRICE_ATOMIC, USDC } from '../src/config.ts'
 import { MANDATES } from '../src/mandates.ts'
+import type { LeashReader } from '../src/leash.ts'
 import { FakeFacilitator, FakeReader, MemoryStore, PAY_TO, checkBody, checkDeps, sealHashOf } from './helpers.ts'
 
 const validator = privateKeyToAccount(generatePrivateKey())
 const payer = privateKeyToAccount(generatePrivateKey())
 
-function setup(reader = new FakeReader()) {
+function setup(reader = new FakeReader(), leash?: LeashReader) {
   const facilitator = new FakeFacilitator()
   const receipts = new MemoryStore()
   const app = createApp({
@@ -20,6 +21,7 @@ function setup(reader = new FakeReader()) {
     receipts,
     mandates: MANDATES,
     checkDeps: () => checkDeps(validator, reader),
+    leash,
   })
   return { app, facilitator, receipts }
 }
@@ -39,13 +41,13 @@ function payerClient() {
 }
 
 /** 402 challenge, then a real x402 v2 exact payment signed by a throwaway key. */
-async function paidPost(app: ReturnType<typeof createApp>, body: unknown) {
-  const challenge = await post(app, body)
+async function paidPost(app: ReturnType<typeof createApp>, body: unknown, headers: Record<string, string> = {}) {
+  const challenge = await post(app, body, headers)
   expect(challenge.status).toBe(402)
   const http = payerClient()
   const required = http.getPaymentRequiredResponse((name) => challenge.headers.get(name), await challenge.json())
   const payload = await http.createPaymentPayload(required)
-  return post(app, body, http.encodePaymentSignatureHeader(payload))
+  return post(app, body, { ...headers, ...http.encodePaymentSignatureHeader(payload) })
 }
 
 describe('POST /check payment', () => {
@@ -143,6 +145,37 @@ describe('POST /check refusals are free', () => {
     // The middleware syncs /supported when it is created; nothing is verified or settled.
     expect(facilitator.calls).not.toContain('verify')
     expect(facilitator.calls).not.toContain('settle')
+  })
+})
+
+describe('POST /check with x-leash-agent', () => {
+  const leashed = (status: Awaited<ReturnType<LeashReader>>['status']): LeashReader => async (agent) => ({
+    agent, status, remainingToday: '4900000', expiry: '1791887540', agentId: '10281',
+  })
+
+  it('without the header the leash is never read and the response has no leash field', async () => {
+    const { app } = setup(new FakeReader(), () => Promise.reject(new Error('must not be read')))
+    const res = await paidPost(app, checkBody())
+    expect(res.status).toBe(200)
+    expect(await res.json()).not.toHaveProperty('leash')
+  })
+
+  it.each(['REVOKED', 'EXPIRED', 'OVER_CAP', 'SELLER_NOT_ALLOWED'] as const)('%s is refused with 403 before any payment', async (status) => {
+    const { app, facilitator } = setup(new FakeReader(), leashed(status))
+    const res = await post(app, checkBody(), { 'x-leash-agent': payer.address })
+    expect(res.status).toBe(403)
+    expect(((await res.json()) as { leash: { status: string } }).leash.status).toBe(status)
+    expect(facilitator.calls).not.toContain('verify')
+    expect(facilitator.calls).not.toContain('settle')
+  })
+
+  it('an OK or unknown agent is served, and the verdict comes back beside the receipt', async () => {
+    for (const status of ['OK', 'UNKNOWN_AGENT'] as const) {
+      const { app } = setup(new FakeReader(), leashed(status))
+      const res = await paidPost(app, checkBody(), { 'x-leash-agent': payer.address })
+      expect(res.status).toBe(200)
+      expect(((await res.json()) as { leash: { status: string } }).leash).toMatchObject({ agent: payer.address, status })
+    }
   })
 })
 
