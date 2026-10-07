@@ -9,7 +9,8 @@ import { viemKuruReader } from 'proof-of-reason-engine/kuru'
 import { createApp } from './app.ts'
 import type { ReceiptStore } from './app.ts'
 import { HttpError } from './check.ts'
-import { CHAIN_ID, FACILITATOR_URL, MORPHO } from './config.ts'
+import { CHAIN_ID, FACILITATOR_URL, MORPHO, PRICE_ATOMIC } from './config.ts'
+import { viemLeashReader } from './leash.ts'
 import { MANDATES } from './mandates.ts'
 import { viemRegistryWriter } from './registry.ts'
 
@@ -84,6 +85,7 @@ export function buildApp(env: Env, facilitator?: FacilitatorClient) {
     payTo,
     receipts: env.RECEIPTS,
     mandates: MANDATES,
+    leash: viemLeashReader(client, payTo, BigInt(PRICE_ATOMIC)),
     checkDeps: () => {
       const account = validatorAccount(env)
       return {
